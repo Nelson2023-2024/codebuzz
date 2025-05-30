@@ -19,7 +19,11 @@ const app = express();
 app.use(cookieParser())
 
 // Middleware
-app.use(cors());
+// Configure CORS
+app.use(cors({
+  origin: 'http://localhost:5173', // Allow your frontend origin
+  credentials: true // Allow cookies to be sent
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // Rate limiting
