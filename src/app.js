@@ -10,6 +10,7 @@ import { guestAdminRoute } from './routes/guestAdmin.route.js'; // Keep existing
 import { emailRoutes } from './routes/email.routes.js';
 import { rsvpRoutes } from './routes/rsvp.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
+import { authRoutes } from './routes/auth.router.js';
 
 configDotenv();
 
@@ -33,6 +34,7 @@ app.use("/api", guestAdminRoute);
 app.use("/api/email", emailRoutes);
 app.use("/api", rsvpRoutes);
 app.use("/api/admin", adminRoutes); // Admin routes under /api/admin
+app.use("/api/auth", authRoutes); // Admin routes under /api/admin
 
 // Bull dashboard
 app.use('/admin/queues', bullRouter);

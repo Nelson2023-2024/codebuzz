@@ -23,7 +23,7 @@ services:
     image: mongo:latest
     container_name: tutorial_mongodb
     ports:
-      - "27017:27017" # Expose MongoDB port to host (optional, but useful for external tools)
+      - "27018:27017" # Expose MongoDB port to host (optional, but useful for external tools)
     volumes:
       - mongodb_data:/data/db # Persist data
 
