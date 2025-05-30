@@ -156,7 +156,7 @@ router.post('/:token', async (req, res) => {
 });
 
 // Get RSVP page data - Enhanced version
-router.get('/rsvp/:token', async (req, res) => {
+router.get('/:token', async (req, res) => {
     try {
         const { token } = req.params;
 
@@ -384,4 +384,124 @@ async function getNextAvailableSeat(eventId, event, session = null) {
     }
 }
 
+// Delete RSVP endpoint - Refactored to remove transactions
+router.delete('/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { eventId } = req.body;
+
+        // Validate input
+        if (!eventId) {
+            return res.status(400).json({ error: 'Event ID is required' });
+        }
+
+        // Find guest by invitation token
+        const guest = await Guest.findOne({ invitationToken: token, isActive: true });
+        if (!guest) {
+            return res.status(404).json({ error: 'Invalid invitation token' });
+        }
+
+        // Find event
+        const event = await Event.findById(eventId);
+        if (!event || !event.isActive) {
+            return res.status(404).json({ error: 'Event not found or inactive' });
+        }
+
+        // Check if deletion is allowed (before deadline)
+        if (event.registrationDeadline && new Date() > event.registrationDeadline) {
+            return res.status(400).json({ error: 'Registration deadline has passed. Deletion not allowed.' });
+        }
+
+        // Find existing RSVP
+        const existingRSVP = await RSVP.findOne({ guest: guest._id, event: eventId });
+        if (!existingRSVP) {
+            return res.status(404).json({ error: 'No RSVP found to delete' });
+        }
+
+        const rsvpStatus = existingRSVP.status;
+        
+        // Adjust event counts based on the RSVP status being deleted (atomic operations)
+        const eventUpdates = {};
+        
+        if (rsvpStatus === 'confirmed') {
+            eventUpdates.$inc = { currentReservations: -1 };
+        } else if (rsvpStatus === 'waitlisted') {
+            eventUpdates.$inc = { waitlistCount: -1 };
+        } else if (rsvpStatus === 'declined') {
+            eventUpdates.$inc = { totalDeclined: -1 };
+        }
+
+        // Update event counts if any changes are needed
+        if (Object.keys(eventUpdates).length > 0) {
+            await Event.findByIdAndUpdate(eventId, eventUpdates);
+        }
+
+        // Delete the RSVP record
+        await RSVP.findByIdAndDelete(existingRSVP._id);
+
+        // Update guest stats
+        await Guest.findByIdAndUpdate(guest._id, {
+            $inc: { totalRsvps: -1 }
+        });
+
+        // If a confirmed spot was freed up and there's a waitlist, promote someone
+        if (rsvpStatus === 'confirmed') {
+            const updatedEvent = await Event.findById(eventId); // Get fresh event state
+            if (updatedEvent && updatedEvent.waitlistCount > 0) {
+                // Find the oldest waitlisted RSVP for this event
+                const waitlistedRSVP = await RSVP.findOne(
+                    { event: eventId, status: 'waitlisted' },
+                    null,
+                    { sort: { rsvpDate: 1 } } // Sort by oldest RSVP date
+                );
+
+                if (waitlistedRSVP) {
+                    // Promote from waitlist to confirmed
+                    const seatNumber = await getNextAvailableSeat(eventId, updatedEvent);
+                    
+                    await RSVP.findByIdAndUpdate(waitlistedRSVP._id, {
+                        status: 'confirmed',
+                        seatNumber: seatNumber,
+                        promotedDate: new Date()
+                    });
+
+                    await Event.findByIdAndUpdate(eventId, {
+                        $inc: { 
+                            currentReservations: 1, // Increment confirmed count
+                            waitlistCount: -1      // Decrement waitlist count
+                        }
+                    });
+
+                    // Note: In a real application, you'd want to send a notification
+                    // to the promoted guest here (e.g., via email or webhook)
+                }
+            }
+        }
+
+        res.json({
+            status: 'success',
+            message: 'RSVP deleted successfully',
+            deletedRSVP: {
+                status: rsvpStatus,
+                seatNumber: existingRSVP.seatNumber,
+                eventName: event.name,
+                eventDate: event.eventDate
+            }
+        });
+
+    } catch (error) {
+        console.error('Delete RSVP error:', error);
+        
+        if (error.name === 'CastError') {
+            return res.status(400).json({ 
+                error: 'Invalid event ID format' 
+            });
+        }
+        
+        res.status(500).json({ 
+            error: error.message || 'Failed to delete RSVP',
+            requestId: req.id
+        });
+    }
+});
 export { router as rsvpRoutes };
