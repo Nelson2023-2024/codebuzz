@@ -7,6 +7,7 @@ import LoginPage from "./pages/login/LoginPage";
 import Sidebar from "./components/sidebar/SideBar";
 import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "react-hot-toast";
+import GuestPage from "./pages/guests/GuestPage";
 
 function App() {
   const { authUser, isLoading, isError } = useAuth(); // Destructure isLoading and isError
@@ -52,6 +53,11 @@ function App() {
             path="/login"
             // If authUser is NOT present, stay on LoginPage, otherwise navigate to home
             element={!authUser ? <LoginPage /> : <Navigate to={"/"} />}
+          />
+          <Route
+            path="/guests"
+            // If authUser is NOT present, stay on LoginPage, otherwise navigate to home
+            element={!authUser ? <GuestPage /> : <Navigate to={"/"} />}
           />
         </Routes>
         <Toaster />
