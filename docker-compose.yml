@@ -1,7 +1,6 @@
 version: "3.7"
 
 services:
-
   redis:
     image: redis
     container_name: tutorial_redis
@@ -19,13 +18,13 @@ services:
     ports:
       - "8081:8081"
 
-  mongodb: # <--- ADDED THIS SERVICE
+  mongodb:
     image: mongo:latest
     container_name: tutorial_mongodb
     ports:
-      - "27018:27017" # Expose MongoDB port to host (optional, but useful for external tools)
+      - "27018:27017"
     volumes:
-      - mongodb_data:/data/db # Persist data
+      - mongodb_data:/data/db
 
   server:
     container_name: tutorial_backend
@@ -33,7 +32,7 @@ services:
       context: ./
     environment:
       REDIS_URL: redis:6379
-      MONGODB_URI: mongodb://mongodb:27017/event_management # <--- ADDED THIS ENVIRONMENT VARIABLE
+      MONGODB_URI: mongodb://mongodb:27017/event_management
       CHOKIDAR_USEPOLLING: 'true'
       CHOKIDAR_INTERVAL: 1000
     ports:
@@ -42,7 +41,25 @@ services:
       - ./:/var/app
     depends_on:
       - redis
-      - mongodb # <--- ADDED DEPENDENCY ON MONGODB
+      - mongodb
 
-volumes: # <--- ADDED THIS VOLUME DEFINITION
+  frontend:
+    container_name: tutorial_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      - VITE_API_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/var/app
+      - /var/app/node_modules
+    depends_on:
+      - server
+    stdin_open: true
+    tty: true
+
+volumes:
   mongodb_data:
