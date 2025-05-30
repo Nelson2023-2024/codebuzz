@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { Guest } from "../models/Guest.model.js";
 import { generateToken } from "../utils/generateTokenAndSetCookie.js";
+import { protectRoute } from "../middleware/protectRoute.js";
 
 const router = Router();
 
@@ -49,10 +50,10 @@ router.post("/logout", (req, res) => {
 });
 
 // Get current authenticated admin
-router.get("/me", async (req, res) => {
+router.get("/me",protectRoute, async (req, res) => {
   try {
     // Middleware will attach user to req
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await Guest.findById(req.user.id).select("-password");
     res.json(user);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
