@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { sendBulkInvitations, sendSingleEmail, sendReminderEmails } from '../queues/email.queue.js';
+import { protectRoute } from '../middleware/protectRoute.js';
 
 const router = Router();
 
+router.use(protectRoute)
 // Bulk email sending endpoint
 router.post('/send-bulk-invitations', async (req, res) => {
     try {

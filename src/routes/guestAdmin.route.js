@@ -2,10 +2,11 @@
 import { Router } from "express";
 import { Guest } from "../models/Guest.model.js";
 import bcrypt from 'bcryptjs'; // Import bcrypt here
+import { adminRoute, protectRoute } from "../middleware/protectRoute.js";
 
 const router = Router();
 
-router.post('/admin/guests', async (req, res) => {
+router.post('/admin/guests',protectRoute, adminRoute, async (req, res) => {
     try {
         const { firstName, lastName, email, phone, company, password, role } = req.body; // Destructure password and role
 

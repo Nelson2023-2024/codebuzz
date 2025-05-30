@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from "cookie-parser"
 import dotenv, { configDotenv } from "dotenv";
 import rateLimit from 'express-rate-limit';
 import { router as bullRouter } from 'bull-board';
@@ -15,6 +16,7 @@ import { authRoutes } from './routes/auth.router.js';
 configDotenv();
 
 const app = express();
+app.use(cookieParser())
 
 // Middleware
 app.use(cors());

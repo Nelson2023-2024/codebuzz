@@ -2,11 +2,12 @@ import { Router } from 'express';
 import { Guest } from '../models/Guest.model.js';
 import { Event } from '../models/Event.model.js';
 import { RSVP } from '../models/RSVP.model.js';
+import { protectRoute } from '../middleware/protectRoute.js';
 
 const router = Router();
 
 // RSVP endpoint - Refactored to remove transactions
-router.post('/:token', async (req, res) => {
+router.post('/:token',protectRoute, async (req, res) => {
     try {
         const { token } = req.params;
         const { eventId, status, specialRequests, dietaryRestrictions } = req.body;

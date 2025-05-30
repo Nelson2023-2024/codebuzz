@@ -4,10 +4,14 @@ import { Event } from '../models/Event.model.js';
 import { RSVP } from '../models/RSVP.model.js';
 import { EmailLog } from '../models/EmailLog.model.js';
 import { Guest } from '../models/Guest.model.js';
+import { adminRoute, protectRoute } from '../middleware/protectRoute.js';
 
 
 const router = Router();
 
+
+router.use(protectRoute)
+router.use(adminRoute)
 // Get event statistics
 router.get('/events/:eventId/stats', async (req, res) => {
     try {
@@ -145,16 +149,75 @@ router.post('/guests/import', async (req, res) => {
     }
 });
 
-// Create event
 router.post('/events', async (req, res) => {
     try {
-        const event = new Event(req.body);
+        // Destructure all expected fields from req.body
+        const {
+            name,
+            description,
+            eventDate,
+            venue,
+            maxCapacity,
+            isActive,
+            registrationDeadline
+        } = req.body;
+
+        // --- Input Validation ---
+        // Check for required fields
+        if (!name || !description || !eventDate || !venue) {
+            return res.status(400).json({ error: 'Missing required event fields: name, description, eventDate, and venue are mandatory.' });
+        }
+
+        // Validate eventDate format and if it's in the future
+        const parsedEventDate = new Date(eventDate);
+        if (isNaN(parsedEventDate.getTime()) || parsedEventDate < new Date()) {
+            return res.status(400).json({ error: 'Invalid or past eventDate. Please provide a valid future date/time.' });
+        }
+
+        // Validate maxCapacity if provided
+        if (maxCapacity !== undefined && (typeof maxCapacity !== 'number' || maxCapacity <= 0)) {
+            return res.status(400).json({ error: 'maxCapacity must be a positive number.' });
+        }
+
+        // Validate registrationDeadline if provided and ensure it's before eventDate
+        if (registrationDeadline !== undefined) {
+            const parsedRegistrationDeadline = new Date(registrationDeadline);
+            if (isNaN(parsedRegistrationDeadline.getTime())) {
+                return res.status(400).json({ error: 'Invalid registrationDeadline format.' });
+            }
+            if (parsedRegistrationDeadline >= parsedEventDate) {
+                return res.status(400).json({ error: 'Registration deadline must be before the event date.' });
+            }
+        }
+
+        // Create new Event instance
+        const event = new Event({
+            name,
+            description,
+            eventDate: parsedEventDate, // Use parsed date
+            venue,
+            maxCapacity: maxCapacity || 500, // Use provided capacity or default
+            isActive: isActive !== undefined ? isActive : true, // Use provided status or default
+            registrationDeadline: registrationDeadline ? new Date(registrationDeadline) : undefined // Use parsed date or undefined
+        });
+
         await event.save();
-        res.status(201).json(event);
+
+        res.status(201).json({
+            message: 'Event created successfully!',
+            event: event.toObject() // Return the saved event object
+        });
+
     } catch (error) {
         console.error('Create event error:', error);
-        res.status(500).json({ error: error.message });
+
+        // Handle Mongoose validation errors
+        if (error.name === 'ValidationError') {
+            const errors = Object.keys(error.errors).map(key => error.errors[key].message);
+            return res.status(400).json({ error: 'Validation failed', details: errors });
+        }
+
+        res.status(500).json({ error: error.message || 'Internal server error while creating event.' });
     }
 });
-
 export { router as adminRoutes};
