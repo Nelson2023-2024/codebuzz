@@ -30,7 +30,7 @@ app.use('/api', limiter);
 
 // Mount external routes
 app.use("/api", guestAdminRoute);
-app.use("/api", emailRoutes);
+app.use("/api/email", emailRoutes);
 app.use("/api", rsvpRoutes);
 app.use("/api/admin", adminRoutes); // Admin routes under /api/admin
 
