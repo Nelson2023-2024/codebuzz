@@ -35,10 +35,11 @@ const eventSchema = new mongoose.Schema({
     },
     registrationDeadline: {
         type: Date,
-        default: true
+        // Removed `default: true`. Now it will be undefined/null if not provided.
+        // If you want it to default to the current time, use: default: Date.now
     }
 }, {
     timestamps: true
 });
 
-export const Event =  mongoose.model('Event', eventSchema);
+export const Event = mongoose.model('Event', eventSchema);

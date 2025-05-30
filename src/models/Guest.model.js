@@ -5,7 +5,7 @@ const guestSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
-        unique: true,
+        unique: true, // Mongoose automatically creates a unique index here
         lowercase: true,
         trim: true
     },
@@ -21,7 +21,7 @@ const guestSchema = new mongoose.Schema({
     },
     invitationToken: {
         type: String,
-        unique: true,
+        unique: true, // Mongoose automatically creates a unique index here
         default: uuidv4
     },
     phone: String,
@@ -35,8 +35,8 @@ const guestSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-guestSchema.index({ email: 1 });
-guestSchema.index({ invitationToken: 1 });
-guestSchema.index({ createdAt: -1 });
+// The 'email' and 'invitationToken' indexes are handled by 'unique: true' above.
+// Only keep indexes that are not implicitly created by other schema options.
+guestSchema.index({ createdAt: -1 }); // This index is still good for performance
 
 export const Guest = mongoose.model('Guest', guestSchema);

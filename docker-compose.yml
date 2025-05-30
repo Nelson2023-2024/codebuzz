@@ -19,17 +19,30 @@ services:
     ports:
       - "8081:8081"
 
+  mongodb: # <--- ADDED THIS SERVICE
+    image: mongo:latest
+    container_name: tutorial_mongodb
+    ports:
+      - "27017:27017" # Expose MongoDB port to host (optional, but useful for external tools)
+    volumes:
+      - mongodb_data:/data/db # Persist data
+
   server:
     container_name: tutorial_backend
     build:
       context: ./
     environment:
       REDIS_URL: redis:6379
+      MONGODB_URI: mongodb://mongodb:27017/event_management # <--- ADDED THIS ENVIRONMENT VARIABLE
       CHOKIDAR_USEPOLLING: 'true'
       CHOKIDAR_INTERVAL: 1000
     ports:
-     - 5000:5000
+      - 5000:5000
     volumes:
       - ./:/var/app
     depends_on:
       - redis
+      - mongodb # <--- ADDED DEPENDENCY ON MONGODB
+
+volumes: # <--- ADDED THIS VOLUME DEFINITION
+  mongodb_data:
