@@ -37,11 +37,7 @@ const Sidebar = () => {
   // Navigation items
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/", active: true },
-    { icon: Users, label: "Employees", path: "/employees" },
-    { icon: CalendarCheck, label: "Attendance", path: "/attendance" },
-    { icon: DoorOpen, label: "Leave", path: "/leave" },
-    { icon: Settings, label: "Departments", path: "/departments" },
-    { icon: Bell, label: "Notifications", path: "/notifications" },
+    { icon: Users, label: "Guests", path: "/guests" },
   ];
 
   return (

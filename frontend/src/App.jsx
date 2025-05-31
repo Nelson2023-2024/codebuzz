@@ -57,7 +57,7 @@ function App() {
           <Route
             path="/guests"
             // If authUser is NOT present, stay on LoginPage, otherwise navigate to home
-            element={!authUser ? <GuestPage /> : <Navigate to={"/"} />}
+            element={authUser ? <GuestPage /> : <Navigate to={"/guests"} />}
           />
         </Routes>
         <Toaster />
