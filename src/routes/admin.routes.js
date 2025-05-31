@@ -11,6 +11,51 @@ const router = Router();
 
 
 router.use(protectRoute)
+
+router.get('/events', async (req, res) => {
+  try {
+    // 1) Find all events (you can filter by isActive:true if you only want currently active ones)
+    const events = await Event.find({}); 
+
+    // 2) Map into the enriched structure, computing spotsRemaining/isFull for each
+    const formatted = events.map(ev => {
+      // Ensure numeric defaults if fields are missing
+      const maxCap = ev.maxCapacity || 0;
+      const current = ev.currentReservations || 0;
+      const spotsRemaining = Math.max(0, maxCap - current);
+      const isOpen = !ev.registrationDeadline || new Date() <= ev.registrationDeadline;
+      
+      return {
+        id: ev._id,
+        name: ev.name,
+        description: ev.description,
+        eventDate: ev.eventDate,
+        venue: ev.venue,
+        maxCapacity: maxCap,
+        currentReservations: current,
+        spotsRemaining,
+        waitlistCount: ev.waitlistCount || 0,
+        registrationDeadline: ev.registrationDeadline || null,
+        isRegistrationOpen: isOpen,
+        isFull: spotsRemaining === 0,
+        isActive: ev.isActive
+      };
+    });
+
+    return res.json({
+      count: formatted.length,
+      events: formatted
+    });
+  } catch (err) {
+    console.error('Public GET /events error:', err);
+    return res.status(500).json({
+      error: 'Failed to fetch events',
+      details: err.message
+    });
+  }
+});
+
+
 router.use(adminRoute)
 // Get event statistics
 router.get('/events/:eventId/stats', async (req, res) => {
