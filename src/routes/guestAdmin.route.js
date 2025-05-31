@@ -68,4 +68,30 @@ router.get("/", protectRoute, adminRoute, async (req, res) => {
         res.status(500).json({ error: error.message || 'Internal server error during guest retrieval.' });
     }
 });
+
+// NEW: Route to delete a guest by ID
+router.delete("/:id", protectRoute, adminRoute, async (req, res) => {
+    try {
+        const { id } = req.params; // Get the guest ID from URL parameters
+
+        // Find and delete the guest
+        const deletedGuest = await Guest.findByIdAndDelete(id);
+
+        if (!deletedGuest) {
+            return res.status(404).json({ error: 'Guest not found.' });
+        }
+
+        res.status(200).json({
+            message: 'Guest deleted successfully',
+            deletedGuestId: id // Optionally return the ID of the deleted guest
+        });
+    } catch (error) {
+        console.error('Delete guest error:', error);
+        // Handle invalid ID format (e.g., not a valid MongoDB ObjectId)
+        if (error.name === 'CastError') {
+            return res.status(400).json({ error: 'Invalid guest ID format.' });
+        }
+        res.status(500).json({ error: error.message || 'Internal server error during guest deletion.' });
+    }
+});
 export { router as guestAdminRoute };
