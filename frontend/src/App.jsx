@@ -10,6 +10,7 @@ import { Toaster } from "react-hot-toast";
 import GuestPage from "./pages/guests/GuestPage";
 import GuestDetailPage from "./pages/guests/GuestDetailsPage";
 import EventPage from "./pages/events/EventPage";
+import RVPSPage from "./pages/rvps/RVPSPage";
 
 function App() {
   // FIX: Destructure 'error' from useAuth
@@ -58,6 +59,10 @@ function App() {
           <Route
             path="/events"
             element={authUser ? <EventPage /> : <Navigate to={"/login"} />}
+          />
+          <Route
+            path="/rvps"
+            element={authUser ? <RVPSPage /> : <Navigate to={"/login"} />}
           />
         </Routes>
         <Toaster />

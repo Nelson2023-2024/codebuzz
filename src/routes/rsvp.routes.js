@@ -164,75 +164,129 @@ router.post('/', protectRoute, adminRoute, async (req, res) => {
     }
 });
 
-// Add this route after the existing routes
+
+// Helper to determine if registration is still open
+function isRegistrationOpenFn(event) {
+  if (!event.registrationDeadline) return true;
+  return new Date() <= event.registrationDeadline;
+}
 router.get('/all', protectRoute, adminRoute, async (req, res) => {
-    try {
-        // Fetch all RSVPs and populate guest and event details
-        const allRsvps = await RSVP.find()
-            .populate({
-                path: 'guest',
-                select: 'firstName lastName email invitationToken' // Select specific fields
-            })
-            .populate({
-                path: 'event',
-                select: 'name eventDate venue maxCapacity' // Select specific fields
-            })
-            .sort({ rsvpDate: -1 }); // Sort by most recent first
+  try {
+    // 1) Fetch all RSVPs, populating Guest & Event sub-documents
+    const allRsvps = await RSVP.find()
+      .populate({
+        path: 'guest',
+        select: 'firstName lastName email invitationToken isActive'
+      })
+      .populate({
+        path: 'event',
+        select: 'name description eventDate venue maxCapacity currentReservations waitlistCount registrationDeadline isActive'
+      })
+      .sort({ rsvpDate: -1 });
 
-        // Transform the data for better presentation
-        const formattedRsvps = allRsvps.map(rsvp => {
-            // Safely access guest and event properties, providing defaults if null
-            const guestInfo = rsvp.guest ? {
-                id: rsvp.guest._id,
-                name: `${rsvp.guest.firstName || 'Unknown'} ${rsvp.guest.lastName || 'Guest'}`,
-                email: rsvp.guest.email || 'N/A',
-                invitationToken: rsvp.guest.invitationToken || 'N/A'
-            } : {
-                id: null,
-                name: 'Deleted Guest',
-                email: 'N/A',
-                invitationToken: 'N/A'
-            };
+    // 2) Transform into the “rich” format
+    const formattedRsvps = allRsvps.map((rsvpDoc) => {
+      // a) If guest or event has been deleted or deactivated, supply defaults
+      const guest = rsvpDoc.guest;
+      const event = rsvpDoc.event;
 
-            const eventInfo = rsvp.event ? {
-                id: rsvp.event._id,
-                name: rsvp.event.name || 'Unknown Event',
-                date: rsvp.event.eventDate, // Will be null if rsvp.event is null or eventDate is missing
-                venue: rsvp.event.venue || 'N/A',
-                capacity: rsvp.event.maxCapacity || 0
-            } : {
-                id: null,
-                name: 'Deleted Event',
-                date: null,
-                venue: 'N/A',
-                capacity: 0
-            };
+      const guestInfo = guest
+        ? {
+            id: guest._id,
+            firstName: guest.firstName || 'Unknown',
+            lastName: guest.lastName || 'Guest',
+            email: guest.email || 'N/A',
+            invitationToken: guest.invitationToken || 'N/A',
+            isActive: guest.isActive
+          }
+        : {
+            id: null,
+            firstName: 'Deleted',
+            lastName: 'Guest',
+            email: 'N/A',
+            invitationToken: 'N/A',
+            isActive: false
+          };
 
-            return {
-                id: rsvp._id,
-                status: rsvp.status,
-                seatNumber: rsvp.seatNumber,
-                specialRequests: rsvp.specialRequests,
-                dietaryRestrictions: rsvp.dietaryRestrictions,
-                rsvpDate: rsvp.rsvpDate,
-                checkInStatus: rsvp.checkInStatus,
-                guest: guestInfo,
-                event: eventInfo
-            };
-        });
+      let eventInfo = {
+        id: null,
+        name: 'Deleted Event',
+        description: '',
+        eventDate: null,
+        venue: 'N/A',
+        currentReservations: 0,
+        maxCapacity: 0,
+        spotsRemaining: 0,
+        waitlistCount: 0,
+        registrationDeadline: null,
+        isRegistrationOpen: false,
+        isFull: false,
+        isActive: false
+      };
 
-        res.json({
-            count: formattedRsvps.length,
-            rsvps: formattedRsvps
-        });
+      if (event) {
+        const spotsRemaining = Math.max(
+          0,
+          event.maxCapacity - event.currentReservations
+        );
+        const isOpen = isRegistrationOpenFn(event);
 
-    } catch (error) {
-        console.error('Admin get all RSVPs error:', error);
-        res.status(500).json({
-            error: 'Failed to fetch RSVP data',
-            details: error.message // Keep this for debugging, but be mindful of exposing full error messages in production
-        });
-    }
+        eventInfo = {
+          id: event._id,
+          name: event.name || 'Unknown Event',
+          description: event.description || '',
+          eventDate: event.eventDate,
+          venue: event.venue || 'N/A',
+          currentReservations: event.currentReservations || 0,
+          maxCapacity: event.maxCapacity || 0,
+          spotsRemaining,
+          waitlistCount: event.waitlistCount || 0,
+          registrationDeadline: event.registrationDeadline || null,
+          isRegistrationOpen: isOpen,
+          isFull: spotsRemaining === 0,
+          isActive: event.isActive
+        };
+      }
+
+      // b) Build the RSVP-specific fields exactly as the single-guest endpoint did
+      const existingResponse = {
+        status: rsvpDoc.status,
+        seatNumber: rsvpDoc.seatNumber || null,
+        specialRequests: rsvpDoc.specialRequests || '',
+        dietaryRestrictions: rsvpDoc.dietaryRestrictions || '',
+        rsvpDate: rsvpDoc.rsvpDate,
+        checkInStatus: rsvpDoc.checkInStatus || 'not_arrived'
+      };
+
+      return {
+        id: rsvpDoc._id,
+        status: rsvpDoc.status,
+        seatNumber: rsvpDoc.seatNumber,
+        specialRequests: rsvpDoc.specialRequests,
+        dietaryRestrictions: rsvpDoc.dietaryRestrictions,
+        rsvpDate: rsvpDoc.rsvpDate,
+        checkInStatus: rsvpDoc.checkInStatus || 'not_arrived',
+
+        // Always true in this “/all” context—these are all existing RSVPs:
+        hasResponded: true,
+        existingResponse,
+
+        guest: guestInfo,
+        event: eventInfo
+      };
+    });
+
+    return res.json({
+      count: formattedRsvps.length,
+      rsvps: formattedRsvps
+    });
+  } catch (error) {
+    console.error('Admin GET /all RSVPs error:', error);
+    return res.status(500).json({
+      error: 'Failed to fetch RSVP data',
+      details: error.message
+    });
+  }
 });
 
 // Get RSVP data for logged-in user
