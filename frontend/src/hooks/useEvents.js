@@ -1,0 +1,89 @@
+// hooks/useLeave.js
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-hot-toast";
+
+// Custom hook for fetching leave types
+export const useGetEvents = () => {
+  return useQuery({
+    queryKey: ["events"],
+    queryFn: async () => {
+      const response = await fetch("http://localhost:5005/api/leave", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to fetch leave types");
+      }
+
+      const data = await response.json();
+      return data;
+    },
+  });
+};
+
+
+
+// NEW: Custom hook for creating a new leave type (admin only)
+export function useCreateEvent() {
+    const queryClient = useQueryClient();
+  
+    const { mutate: createEvent, isLoading } = useMutation({
+      mutationFn: async (leaveData) => {
+        const res = await fetch(
+          "http://localhost:5005/api/admin-mangage-leave",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(leaveData),
+            credentials: "include",
+          }
+        );
+        
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Failed to create leave type");
+        }
+        return data;
+      },
+      onSuccess: (payload) => {
+        // Invalidate leave types to refresh the list
+        queryClient.invalidateQueries(["events"]);
+        
+        // Show success notification
+        toast.success(payload.message || "Leave type created successfully");
+      },
+      onError: (error) => {
+        toast.error(error.message || "Could not create leave type");
+      },
+    });
+  
+    return { createLeaveType, isLoading };
+  }
+
+  // Add new hook to useLeave.js
+export function useDeleteEvent() {
+    const queryClient = useQueryClient();
+  
+    return useMutation({
+      mutationFn: async (leaveId) => {
+        const res = await fetch(`http://localhost:5005/api/admin-mangage-leave/${leaveId}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Failed to delete leave');
+        return data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries(['events']);
+        toast.success('Leave type deleted successfully');
+      },
+      onError: (error) => {
+        toast.error(error.message || 'Failed to delete leave type');
+      }
+    });
+  }
