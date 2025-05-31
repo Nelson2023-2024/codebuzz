@@ -51,7 +51,7 @@ router.post('/',protectRoute, adminRoute, async (req, res) => {
     }
 });
 
-// NEW: Route to get all guests
+// Route to get all guests including total count
 router.get("/", protectRoute, adminRoute, async (req, res) => {
     try {
         // Find all guests, select specific fields, and sort by creation date
@@ -59,15 +59,20 @@ router.get("/", protectRoute, adminRoute, async (req, res) => {
             .select('-password -__v') // Exclude password and __v (version key)
             .sort({ createdAt: -1 }); // Sort by creation date, newest first
 
+        // Get the total count of all guests
+        const totalGuests = await Guest.countDocuments({}); // Get count of all documents
+
         res.status(200).json({
             message: 'Guests retrieved successfully',
-            guests: guests
+            guests: guests,
+            totalCount: totalGuests // Add the total count to the response
         });
     } catch (error) {
         console.error('Get all guests error:', error);
         res.status(500).json({ error: error.message || 'Internal server error during guest retrieval.' });
     }
 });
+
 
 // NEW: Route to delete a guest by ID
 router.delete("/:id", protectRoute, adminRoute, async (req, res) => {
