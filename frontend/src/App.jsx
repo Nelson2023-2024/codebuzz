@@ -10,7 +10,8 @@ import { Toaster } from "react-hot-toast";
 import GuestPage from "./pages/guests/GuestPage";
 
 function App() {
-  const { authUser, isLoading, isError } = useAuth(); // Destructure isLoading and isError
+  // FIX: Destructure 'error' from useAuth
+  const { authUser, isLoading, isError, error } = useAuth();
   console.log("authUser:", authUser, "isLoading:", isLoading, "isError:", isError);
 
   // You might want a simple loading indicator
@@ -23,18 +24,10 @@ function App() {
   }
 
   // Handle a persistent error (e.g., if the /me endpoint always fails)
-  // You might want to show a general error message or redirect to a more specific error page.
   if (isError) {
-      // You could also render the login page directly here or a specific error page
-      console.error("Error fetching auth user:", error); // Make sure 'error' is destructured from useAuth
-      // If you want to force a redirect to login on persistent error:
-      return <Navigate to="/login" replace />;
-      // Or show an error message on the screen:
-      // return (
-      //   <div className="flex items-center justify-center h-screen text-red-500">
-      //     Failed to load application data. Please try again.
-      //   </div>
-      // );
+    console.error("Error fetching auth user:", error);
+    // If you want to force a redirect to login on persistent error:
+    return <Navigate to="/login" replace />;
   }
 
   return (
@@ -46,18 +39,15 @@ function App() {
         <Routes>
           <Route
             path="/"
-            // If authUser is present, go to HomePage, otherwise navigate to login
             element={authUser ? <HomePage /> : <Navigate to={"/login"} />}
           />
           <Route
             path="/login"
-            // If authUser is NOT present, stay on LoginPage, otherwise navigate to home
             element={!authUser ? <LoginPage /> : <Navigate to={"/"} />}
           />
           <Route
             path="/guests"
-            // If authUser is NOT present, stay on LoginPage, otherwise navigate to home
-            element={authUser ? <GuestPage /> : <Navigate to={"/guests"} />}
+            element={authUser ? <GuestPage /> : <Navigate to={"/login"} />}
           />
         </Routes>
         <Toaster />

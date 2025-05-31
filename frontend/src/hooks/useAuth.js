@@ -15,8 +15,8 @@ const getAuthUserFromLocalStorage = () => {
 export function useAuth() {
   const {
     data: authUser,
-    isLoading, // This refers to the initial fetch or a fetch with no initialData
-    isFetching, // This indicates if a background fetch is happening
+    isLoading,
+    isFetching,
     isError,
     error,
   } = useQuery({
@@ -27,7 +27,14 @@ export function useAuth() {
         const response = await fetch("http://localhost:5000/api/auth/me", {
           method: "GET",
           credentials: "include",
+          headers: {
+            'Content-Type': 'application/json',
+            // Add any other headers your backend expects
+          },
         });
+
+        console.log("Response status:", response.status);
+        console.log("Response headers:", response.headers);
 
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
@@ -35,27 +42,50 @@ export function useAuth() {
             localStorage.removeItem("authUser");
             return null;
           }
-          const errorData = await response.json();
-          throw new Error(errorData.message || `Failed to fetch user data: ${response.status}`);
+          if (response.status === 404) {
+            console.error("Auth endpoint not found (404). Check your backend route.");
+            throw new Error("Authentication endpoint not found");
+          }
+          
+          let errorMessage;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+          } catch {
+            errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          }
+          
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
         console.log("Auth user data fetched:", data);
-        localStorage.setItem("authUser", JSON.stringify(data)); // Keep localStorage updated
+        localStorage.setItem("authUser", JSON.stringify(data));
         return data;
       } catch (err) {
         console.error("Error fetching auth user:", err);
-        localStorage.removeItem("authUser");
+        // Only clear localStorage if it's an auth error, not a network error
+        if (err.message.includes("401") || err.message.includes("403") || err.message.includes("not authenticated")) {
+          localStorage.removeItem("authUser");
+        }
         throw err;
       }
     },
-    initialData: getAuthUserFromLocalStorage(), // <-- THIS IS THE KEY!
-    // To make it clear in logs when initialData is used vs. actual fetch
-    initialDataUpdatedAt: getAuthUserFromLocalStorage() ? Date.now() : 0, // Helps react-query manage staleness
+    initialData: getAuthUserFromLocalStorage(),
+    initialDataUpdatedAt: getAuthUserFromLocalStorage() ? Date.now() : 0,
     staleTime: 5 * 60 * 1000,
     cacheTime: 10 * 60 * 1000,
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on 404 or auth errors
+      if (error.message.includes("404") || 
+          error.message.includes("401") || 
+          error.message.includes("403")) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  return { authUser, isLoading, isError, error, isFetching }; // Return isFetching too for more granular control
+  return { authUser, isLoading, isError, error, isFetching };
 }

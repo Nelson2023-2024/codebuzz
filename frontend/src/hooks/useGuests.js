@@ -1,15 +1,16 @@
-// src/hooks/useGetAllEmployees.js
+// src/hooks/useGuests.js
+
 import { useQuery } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 export function useGetAllGuests() {
   const {
-    data: employees,
+    data: guests,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["employees"], // Unique key for this query
+    queryKey: ["guests"], // Unique key for this query
     queryFn: async () => {
       try {
         const response = await fetch("http://localhost:5000/api/admin-guests", {
@@ -22,21 +23,21 @@ export function useGetAllGuests() {
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch employees");
+          throw new Error(errorData.message || "Failed to fetch guests");
         }
 
         const data = await response.json();
-        // The backend returns { users: [...] }, so we need to access data.users
-        return data.users;
+        // The backend returns { guests: [...] }, so we need to access data.guests
+        return data.guests;
       } catch (error) {
-        console.error("Error fetching employees:", error);
+        console.error("Error fetching guests:", error);
         throw error;
       }
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to load employees.");
+      toast.error(error.message || "Failed to load guests.");
     },
   });
 
-  return { employees, isLoading, isError, error };
+  return { guests, isLoading, isError, error };
 }
