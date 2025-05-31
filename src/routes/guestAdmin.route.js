@@ -6,7 +6,7 @@ import { adminRoute, protectRoute } from "../middleware/protectRoute.js";
 
 const router = Router();
 
-router.post('/admin/guests',protectRoute, adminRoute, async (req, res) => {
+router.post('/',protectRoute, adminRoute, async (req, res) => {
     try {
         const { firstName, lastName, email, phone, company, password, role } = req.body; // Destructure password and role
 
@@ -51,4 +51,21 @@ router.post('/admin/guests',protectRoute, adminRoute, async (req, res) => {
     }
 });
 
+// NEW: Route to get all guests
+router.get("/", protectRoute, adminRoute, async (req, res) => {
+    try {
+        // Find all guests, select specific fields, and sort by creation date
+        const guests = await Guest.find({})
+            .select('-password -__v') // Exclude password and __v (version key)
+            .sort({ createdAt: -1 }); // Sort by creation date, newest first
+
+        res.status(200).json({
+            message: 'Guests retrieved successfully',
+            guests: guests
+        });
+    } catch (error) {
+        console.error('Get all guests error:', error);
+        res.status(500).json({ error: error.message || 'Internal server error during guest retrieval.' });
+    }
+});
 export { router as guestAdminRoute };

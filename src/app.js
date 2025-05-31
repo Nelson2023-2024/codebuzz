@@ -36,7 +36,7 @@ const limiter = rateLimit({
 app.use('/api', limiter);
 
 // Mount external routes
-app.use("/api", guestAdminRoute);
+app.use("/api/admin-guests", guestAdminRoute);
 app.use("/api/email", emailRoutes);
 app.use("/api/rsvp", rsvpRoutes);
 app.use("/api/admin", adminRoutes); // Admin routes under /api/admin
