@@ -9,6 +9,7 @@ import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "react-hot-toast";
 import GuestPage from "./pages/guests/GuestPage";
 import GuestDetailPage from "./pages/guests/GuestDetailsPage";
+import EventPage from "./pages/events/EventPage";
 
 function App() {
   // FIX: Destructure 'error' from useAuth
@@ -53,6 +54,10 @@ function App() {
           <Route
             path="/guests/:guestId"
             element={authUser ? <GuestDetailPage /> : <Navigate to={"/login"} />}
+          />
+          <Route
+            path="/events"
+            element={authUser ? <EventPage /> : <Navigate to={"/login"} />}
           />
         </Routes>
         <Toaster />

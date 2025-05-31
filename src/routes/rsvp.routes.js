@@ -2,20 +2,28 @@ import { Router } from 'express';
 import { Guest } from '../models/Guest.model.js';
 import { Event } from '../models/Event.model.js';
 import { RSVP } from '../models/RSVP.model.js';
-import { protectRoute } from '../middleware/protectRoute.js';
+import { adminRoute, protectRoute } from '../middleware/protectRoute.js';
 
 const router = Router();
 
 // RSVP endpoint - Refactored to remove transactions
-router.post('/:token',protectRoute, async (req, res) => {
+router.post('/', protectRoute, adminRoute, async (req, res) => {
     try {
-        const { token } = req.params;
-        const { eventId, status, specialRequests, dietaryRestrictions } = req.body;
+        const { token, eventId, status, specialRequests, dietaryRestrictions } = req.body;
 
-        // Validate input
-        if (!eventId || !status) {
-            return res.status(400).json({ error: 'Event ID and status are required' });
+        /// Validate input
+        if (!token || typeof token !== 'string' || token.trim() === '') {
+            return res.status(400).json({ error: 'Invitation token is required' });
         }
+
+        if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
+            return res.status(400).json({ error: 'Event ID is required' });
+        }
+
+        if (!status || typeof status !== 'string') {
+            return res.status(400).json({ error: 'RSVP status is required' });
+        }
+
 
         if (!['confirmed', 'declined', 'waitlisted'].includes(status)) {
             return res.status(400).json({ error: 'Invalid RSVP status' });
@@ -59,7 +67,7 @@ router.post('/:token',protectRoute, async (req, res) => {
         if (status === 'confirmed') {
             // Re-fetch event to get the most up-to-date capacity before checking
             const currentEvent = await Event.findById(eventId); // No session needed
-            
+
             if (currentEvent.currentReservations >= currentEvent.maxCapacity) {
                 // Event is full, add to waitlist
                 finalStatus = 'waitlisted';
@@ -75,19 +83,19 @@ router.post('/:token',protectRoute, async (req, res) => {
                     { $inc: { currentReservations: 1 } }, // Atomic increment
                     { new: true } // Return the updated document
                 );
-                
+
                 // Assign seat number
                 assignedSeatNumber = await getNextAvailableSeat(eventId, updatedEvent); // No session needed
                 responseMessage = `Your RSVP has been confirmed! Your seat number is ${assignedSeatNumber}.`;
             }
-            
+
         } else if (status === 'waitlisted') {
             // Direct waitlist request
             await Event.findByIdAndUpdate(eventId, {
                 $inc: { waitlistCount: 1 } // Atomic increment
             });
             responseMessage = 'You have been added to the waitlist.';
-            
+
         } else if (status === 'declined') {
             await Event.findByIdAndUpdate(eventId, {
                 $inc: { totalDeclined: 1 } // Atomic increment
@@ -134,37 +142,103 @@ router.post('/:token',protectRoute, async (req, res) => {
 
     } catch (error) {
         console.error('RSVP error:', error);
-        
+
         // Handle specific MongoDB errors
         if (error.code === 11000) {
-            return res.status(400).json({ 
-                error: 'Duplicate RSVP detected. You may have already responded to this invitation.' 
+            return res.status(400).json({
+                error: 'Duplicate RSVP detected. You may have already responded to this invitation.'
             });
         }
-        
+
         if (error.name === 'ValidationError') {
-            return res.status(400).json({ 
-                error: 'Invalid data provided', 
-                details: error.message 
+            return res.status(400).json({
+                error: 'Invalid data provided',
+                details: error.message
             });
         }
-        
-        res.status(500).json({ 
+
+        res.status(500).json({
             error: error.message || 'Internal server error during RSVP processing.',
             requestId: req.id // If you have request ID middleware
         });
     }
 });
 
-// Get RSVP page data - Enhanced version
-router.get('/:token', async (req, res) => {
+// Add this route after the existing routes
+router.get('/all', protectRoute, adminRoute, async (req, res) => {
     try {
-        const { token } = req.params;
+        // Fetch all RSVPs and populate guest and event details
+        const allRsvps = await RSVP.find()
+            .populate({
+                path: 'guest',
+                select: 'firstName lastName email invitationToken' // Select specific fields
+            })
+            .populate({
+                path: 'event',
+                select: 'name eventDate venue maxCapacity' // Select specific fields
+            })
+            .sort({ rsvpDate: -1 }); // Sort by most recent first
 
-        const guest = await Guest.findOne({ invitationToken: token, isActive: true });
-        if (!guest) {
-            return res.status(404).json({ error: 'Invalid invitation token' });
-        }
+        // Transform the data for better presentation
+        const formattedRsvps = allRsvps.map(rsvp => {
+            // Safely access guest and event properties, providing defaults if null
+            const guestInfo = rsvp.guest ? {
+                id: rsvp.guest._id,
+                name: `${rsvp.guest.firstName || 'Unknown'} ${rsvp.guest.lastName || 'Guest'}`,
+                email: rsvp.guest.email || 'N/A',
+                invitationToken: rsvp.guest.invitationToken || 'N/A'
+            } : {
+                id: null,
+                name: 'Deleted Guest',
+                email: 'N/A',
+                invitationToken: 'N/A'
+            };
+
+            const eventInfo = rsvp.event ? {
+                id: rsvp.event._id,
+                name: rsvp.event.name || 'Unknown Event',
+                date: rsvp.event.eventDate, // Will be null if rsvp.event is null or eventDate is missing
+                venue: rsvp.event.venue || 'N/A',
+                capacity: rsvp.event.maxCapacity || 0
+            } : {
+                id: null,
+                name: 'Deleted Event',
+                date: null,
+                venue: 'N/A',
+                capacity: 0
+            };
+
+            return {
+                id: rsvp._id,
+                status: rsvp.status,
+                seatNumber: rsvp.seatNumber,
+                specialRequests: rsvp.specialRequests,
+                dietaryRestrictions: rsvp.dietaryRestrictions,
+                rsvpDate: rsvp.rsvpDate,
+                checkInStatus: rsvp.checkInStatus,
+                guest: guestInfo,
+                event: eventInfo
+            };
+        });
+
+        res.json({
+            count: formattedRsvps.length,
+            rsvps: formattedRsvps
+        });
+
+    } catch (error) {
+        console.error('Admin get all RSVPs error:', error);
+        res.status(500).json({
+            error: 'Failed to fetch RSVP data',
+            details: error.message // Keep this for debugging, but be mindful of exposing full error messages in production
+        });
+    }
+});
+
+// Get RSVP data for logged-in user
+router.get('/', protectRoute, async (req, res) => {
+    try {
+        const guest = req.user;
 
         // Get the most recent active event
         const event = await Event.findOne({ isActive: true }).sort({ eventDate: 1 });
@@ -175,7 +249,6 @@ router.get('/:token', async (req, res) => {
         // Check if already responded
         const existingRSVP = await RSVP.findOne({ guest: guest._id, event: event._id });
 
-        // Calculate availability
         const spotsRemaining = Math.max(0, event.maxCapacity - event.currentReservations);
         const isRegistrationOpen = !event.registrationDeadline || new Date() <= event.registrationDeadline;
 
@@ -212,141 +285,20 @@ router.get('/:token', async (req, res) => {
 
     } catch (error) {
         console.error('Get RSVP data error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Unable to fetch RSVP information',
             requestId: req.id
         });
     }
 });
 
-// Update RSVP endpoint (for changing responses before deadline)
-router.put('/rsvp/:token', async (req, res) => {
-    let session = null;
-    
-    try {
-        const { token } = req.params;
-        const { eventId, status, specialRequests, dietaryRestrictions } = req.body;
 
-        const guest = await Guest.findOne({ invitationToken: token, isActive: true });
-        if (!guest) {
-            return res.status(404).json({ error: 'Invalid invitation token' });
-        }
 
-        const event = await Event.findById(eventId);
-        if (!event || !event.isActive) {
-            return res.status(404).json({ error: 'Event not found or inactive' });
-        }
-
-        // Check if updates are allowed (before deadline)
-        if (event.registrationDeadline && new Date() > event.registrationDeadline) {
-            return res.status(400).json({ error: 'Registration deadline has passed. Updates not allowed.' });
-        }
-
-        const existingRSVP = await RSVP.findOne({ guest: guest._id, event: eventId });
-        if (!existingRSVP) {
-            return res.status(404).json({ error: 'No existing RSVP found to update' });
-        }
-
-        // Handle status changes that affect capacity
-        const oldStatus = existingRSVP.status;
-        const newStatus = status;
-
-        if (oldStatus !== newStatus) {
-            session = await RSVP.startSession();
-            
-            try {
-                await session.withTransaction(async () => {
-                    // Adjust event counts based on status change
-                    const eventUpdates = {};
-                    
-                    if (oldStatus === 'confirmed' && newStatus !== 'confirmed') {
-                        eventUpdates.$inc = { currentReservations: -1 };
-                    } else if (oldStatus !== 'confirmed' && newStatus === 'confirmed') {
-                        const currentEvent = await Event.findById(eventId).session(session);
-                        if (currentEvent.currentReservations >= currentEvent.maxCapacity) {
-                            throw new Error('Event is now at capacity. Cannot confirm reservation.');
-                        }
-                        eventUpdates.$inc = { currentReservations: 1 };
-                    }
-                    
-                    if (oldStatus === 'waitlisted' && newStatus !== 'waitlisted') {
-                        eventUpdates.$inc = { ...eventUpdates.$inc, waitlistCount: -1 };
-                    } else if (oldStatus !== 'waitlisted' && newStatus === 'waitlisted') {
-                        eventUpdates.$inc = { ...eventUpdates.$inc, waitlistCount: 1 };
-                    }
-
-                    if (Object.keys(eventUpdates).length > 0) {
-                        await Event.findByIdAndUpdate(eventId, eventUpdates, { session });
-                    }
-
-                    // Update RSVP
-                    const rsvpUpdates = {
-                        status: newStatus,
-                        specialRequests: specialRequests || existingRSVP.specialRequests,
-                        dietaryRestrictions: dietaryRestrictions || existingRSVP.dietaryRestrictions
-                    };
-
-                    // Handle seat number assignment/removal
-                    if (newStatus === 'confirmed' && oldStatus !== 'confirmed') {
-                        const updatedEvent = await Event.findById(eventId).session(session);
-                        rsvpUpdates.seatNumber = await getNextAvailableSeat(eventId, updatedEvent, session);
-                    } else if (newStatus !== 'confirmed' && oldStatus === 'confirmed') {
-                        rsvpUpdates.$unset = { seatNumber: 1 };
-                    }
-
-                    await RSVP.findByIdAndUpdate(existingRSVP._id, rsvpUpdates, { session });
-                });
-            } catch (transactionError) {
-                console.error('Update transaction failed:', transactionError);
-                throw transactionError;
-            } finally {
-                await session.endSession();
-                session = null;
-            }
-        } else {
-            // Just update the requests without status change
-            await RSVP.findByIdAndUpdate(existingRSVP._id, {
-                specialRequests: specialRequests || existingRSVP.specialRequests,
-                dietaryRestrictions: dietaryRestrictions || existingRSVP.dietaryRestrictions
-            });
-        }
-
-        const updatedRSVP = await RSVP.findById(existingRSVP._id);
-
-        res.json({
-            status: 'success',
-            message: 'RSVP updated successfully',
-            rsvpDetails: {
-                status: updatedRSVP.status,
-                seatNumber: updatedRSVP.seatNumber,
-                specialRequests: updatedRSVP.specialRequests,
-                dietaryRestrictions: updatedRSVP.dietaryRestrictions
-            }
-        });
-
-    } catch (error) {
-        console.error('Update RSVP error:', error);
-        
-        // Ensure session is ended if still active
-        if (session) {
-            try {
-                await session.endSession();
-            } catch (sessionError) {
-                console.error('Error ending session:', sessionError);
-            }
-        }
-        
-        res.status(500).json({ 
-            error: error.message || 'Failed to update RSVP',
-            requestId: req.id
-        });
-    }
-});
 
 // Helper function to get next available seat
 async function getNextAvailableSeat(eventId, event, session = null) {
     const options = session ? { session } : {};
-    
+
     try {
         if (event.seatLayout === 'sequential') {
             // Sequential seat assignment
@@ -358,24 +310,24 @@ async function getNextAvailableSeat(eventId, event, session = null) {
                 { seatNumber: 1 },
                 options
             ).lean();
-            
+
             const occupiedNumbers = new Set(occupiedSeats.map(r => r.seatNumber));
-            const reservedNumbers = event.reservedSeats 
+            const reservedNumbers = event.reservedSeats
                 ? new Set(event.reservedSeats.filter(s => !s.isAvailable).map(s => s.seatNumber))
                 : new Set();
-            
+
             let availableSeats = [];
             for (let i = 1; i <= event.maxCapacity; i++) {
                 if (!occupiedNumbers.has(i) && !reservedNumbers.has(i)) {
                     availableSeats.push(i);
                 }
             }
-            
-            return availableSeats.length > 0 
-                ? availableSeats[Math.floor(Math.random() * availableSeats.length)] 
+
+            return availableSeats.length > 0
+                ? availableSeats[Math.floor(Math.random() * availableSeats.length)]
                 : event.currentReservations;
         }
-        
+
         // Default to sequential
         return event.currentReservations;
     } catch (error) {
@@ -420,10 +372,10 @@ router.delete('/:token', async (req, res) => {
         }
 
         const rsvpStatus = existingRSVP.status;
-        
+
         // Adjust event counts based on the RSVP status being deleted (atomic operations)
         const eventUpdates = {};
-        
+
         if (rsvpStatus === 'confirmed') {
             eventUpdates.$inc = { currentReservations: -1 };
         } else if (rsvpStatus === 'waitlisted') {
@@ -459,7 +411,7 @@ router.delete('/:token', async (req, res) => {
                 if (waitlistedRSVP) {
                     // Promote from waitlist to confirmed
                     const seatNumber = await getNextAvailableSeat(eventId, updatedEvent);
-                    
+
                     await RSVP.findByIdAndUpdate(waitlistedRSVP._id, {
                         status: 'confirmed',
                         seatNumber: seatNumber,
@@ -467,7 +419,7 @@ router.delete('/:token', async (req, res) => {
                     });
 
                     await Event.findByIdAndUpdate(eventId, {
-                        $inc: { 
+                        $inc: {
                             currentReservations: 1, // Increment confirmed count
                             waitlistCount: -1      // Decrement waitlist count
                         }
@@ -492,14 +444,14 @@ router.delete('/:token', async (req, res) => {
 
     } catch (error) {
         console.error('Delete RSVP error:', error);
-        
+
         if (error.name === 'CastError') {
-            return res.status(400).json({ 
-                error: 'Invalid event ID format' 
+            return res.status(400).json({
+                error: 'Invalid event ID format'
             });
         }
-        
-        res.status(500).json({ 
+
+        res.status(500).json({
             error: error.message || 'Failed to delete RSVP',
             requestId: req.id
         });
