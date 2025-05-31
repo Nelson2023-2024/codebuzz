@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
-import { useGetAllGuests } from "../../hooks/useGuests";
+import { useGetAllGuests, useDeleteGuest } from "../../hooks/useGuests";
 
 // Skeleton Component for Loading State
 const GuestsTableSkeleton = () => {
@@ -111,9 +111,21 @@ const GuestsTableSkeleton = () => {
 
 const GuestPage = () => {
   const { guests, isLoading, isError, error } = useGetAllGuests();
+  const { deleteGuest, isDeleting } = useDeleteGuest();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
+
+  // Handle delete guest with confirmation
+  const handleDeleteGuest = (guest) => {
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete ${guest.firstName} ${guest.lastName}? This action cannot be undone.`
+    );
+    
+    if (confirmDelete) {
+      deleteGuest(guest._id);
+    }
+  };
 
   if (isLoading) {
     return <GuestsTableSkeleton />;
@@ -270,7 +282,7 @@ const GuestPage = () => {
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
+                      <Button variant="ghost" className="h-8 w-8 p-0" disabled={isDeleting}>
                         <span className="sr-only">Open menu</span>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -279,7 +291,13 @@ const GuestPage = () => {
                       <DropdownMenuItem>View guest</DropdownMenuItem>
                       <DropdownMenuItem>Edit guest</DropdownMenuItem>
                       <DropdownMenuItem>Send invitation</DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">Delete guest</DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="text-red-600" 
+                        onClick={() => handleDeleteGuest(guest)}
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? "Deleting..." : "Delete guest"}
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>

@@ -21,8 +21,10 @@ app.use(cookieParser())
 // Middleware
 // Configure CORS
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow your frontend origin
-  credentials: true // Allow cookies to be sent
+    origin: 'http://localhost:5173', // EXACTLY your frontend's origin
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Ensure GET is allowed
+    allowedHeaders: ['Content-Type', 'Authorization'], // Important if you send custom headers
 }));
 app.use(express.json({ limit: '10mb' }));
 
