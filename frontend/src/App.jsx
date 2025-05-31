@@ -8,6 +8,7 @@ import Sidebar from "./components/sidebar/SideBar";
 import { useAuth } from "./hooks/useAuth";
 import { Toaster } from "react-hot-toast";
 import GuestPage from "./pages/guests/GuestPage";
+import GuestDetailPage from "./pages/guests/GuestDetailsPage";
 
 function App() {
   // FIX: Destructure 'error' from useAuth
@@ -43,11 +44,15 @@ function App() {
           />
           <Route
             path="/login"
-            element={!authUser ? <LoginPage /> : <Navigate to={"/"} />}
+            element={!authUser ? <LoginPage /> : <Navigate to={"/login"} />}
           />
           <Route
             path="/guests"
             element={authUser ? <GuestPage /> : <Navigate to={"/login"} />}
+          />
+          <Route
+            path="/guests/:guestId"
+            element={authUser ? <GuestDetailPage /> : <Navigate to={"/login"} />}
           />
         </Routes>
         <Toaster />

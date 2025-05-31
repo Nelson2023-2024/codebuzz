@@ -85,3 +85,48 @@ export function useDeleteGuest() {
 
   return { deleteGuest, isDeleting, isError, error };
 }
+
+export function useCreateGuest() {
+  const queryClient = useQueryClient();
+
+  const {
+    mutate: createGuest,
+    isPending: isCreating,
+    isError,
+    error,
+  } = useMutation({
+    mutationFn: async (guestData) => {
+      try {
+        const response = await fetch("http://localhost:5000/api/admin-guests", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(guestData),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to create guest");
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error creating guest:", error);
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      // Invalidate and refetch the guests query to update the UI
+      queryClient.invalidateQueries({ queryKey: ["guests"] });
+      toast.success("Guest created successfully");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to create guest");
+    },
+  });
+
+  return { createGuest, isCreating, isError, error };
+}

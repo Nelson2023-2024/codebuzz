@@ -1,6 +1,7 @@
 // src/pages/guests/GuestPage.jsx
 
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import {
@@ -17,8 +18,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
+import { Label } from "../../components/ui/label";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
-import { useGetAllGuests, useDeleteGuest } from "../../hooks/useGuests";
+import { useGetAllGuests, useDeleteGuest, useCreateGuest } from "../../hooks/useGuests";
 
 // Skeleton Component for Loading State
 const GuestsTableSkeleton = () => {
@@ -110,11 +120,54 @@ const GuestsTableSkeleton = () => {
 };
 
 const GuestPage = () => {
+  const navigate = useNavigate();
   const { guests, isLoading, isError, error } = useGetAllGuests();
   const { deleteGuest, isDeleting } = useDeleteGuest();
+  const { createGuest, isCreating } = useCreateGuest();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    company: "",
+    password: ""
+  });
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle form submission
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    createGuest(formData, {
+      onSuccess: () => {
+        setIsAddModalOpen(false);
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          company: "",
+          password: ""
+        });
+      }
+    });
+  };
+
+  // Handle view guest - navigate to detail page
+  const handleViewGuest = (guest) => {
+    navigate(`/guests/${guest._id}`);
+  };
 
   // Handle delete guest with confirmation
   const handleDeleteGuest = (guest) => {
@@ -166,9 +219,115 @@ const GuestPage = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Guest Management</h1>
-        <Button className="flex items-center gap-2">
-          <span className="text-xl">+</span> Add Guest
-        </Button>
+        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+          <DialogTrigger asChild>
+            <Button className="flex items-center gap-2">
+              <span className="text-xl">+</span> Add Guest
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Guest</DialogTitle>
+              <DialogDescription>
+                Create a new guest account. Fill in all the required information.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    type="text"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    required
+                    disabled={isCreating}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                    disabled={isCreating}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isCreating}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isCreating}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="company">Company</Label>
+                <Input
+                  id="company"
+                  name="company"
+                  type="text"
+                  value={formData.company}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isCreating}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                  disabled={isCreating}
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddModalOpen(false)}
+                  disabled={isCreating}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isCreating}>
+                  {isCreating ? "Creating..." : "Create Guest"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search and Filter Section */}
@@ -288,7 +447,9 @@ const GuestPage = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>View guest</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleViewGuest(guest)}>
+                        View guest
+                      </DropdownMenuItem>
                       <DropdownMenuItem>Edit guest</DropdownMenuItem>
                       <DropdownMenuItem>Send invitation</DropdownMenuItem>
                       <DropdownMenuItem 
