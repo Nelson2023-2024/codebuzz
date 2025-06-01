@@ -22,6 +22,27 @@ export const useGetEvents = () => {
   });
 };
 
+// Custom hook for fetching a single event
+export const useGetEvent = (eventId) => {
+  return useQuery({
+    queryKey: ["event", eventId],
+    queryFn: async () => {
+      const response = await fetch(`http://localhost:5000/api/admin/events/${eventId}`, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to fetch event");
+      }
+
+      const data = await response.json();
+      return data;
+    },
+    enabled: !!eventId, // Only run query if eventId exists
+  });
+};
+
 // Custom hook for creating a new event (admin only)
 export function useCreateEvent() {
   const queryClient = useQueryClient();
@@ -133,6 +154,37 @@ export function useToggleEventStatus() {
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to update event status');
+    }
+  });
+}
+
+// Custom hook for RSVP submission
+export function useSubmitRSVP() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (rsvpData) => {
+      const res = await fetch('http://localhost:5000/api/rsvp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(rsvpData),
+        credentials: 'include',
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit RSVP');
+      return data;
+    },
+    onSuccess: (data) => {
+      // Invalidate event queries to refresh data
+      queryClient.invalidateQueries(['event']);
+      queryClient.invalidateQueries(['events']);
+      toast.success(data.message || 'RSVP submitted successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to submit RSVP');
     }
   });
 }

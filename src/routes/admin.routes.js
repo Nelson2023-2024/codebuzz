@@ -55,7 +55,29 @@ router.get('/events', async (req, res) => {
   }
 });
 
+// NEW ROUTE: Get a single event by ID (for admin)
+router.get('/events/:eventId', async (req, res) => {
+    try {
+        const { eventId } = req.params;
 
+        // Validate eventId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(eventId)) {
+            return res.status(400).json({ error: 'Invalid Event ID format' });
+        }
+
+        const event = await Event.findById(eventId);
+
+        if (!event) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // You might want to return the full event object or a formatted version
+        res.status(200).json(event);
+    } catch (error) {
+        console.error('Admin GET /events/:eventId error:', error);
+        res.status(500).json({ error: error.message || 'Internal server error while fetching event.' });
+    }
+});
 router.use(adminRoute)
 // Get event statistics
 router.get('/events/:eventId/stats', async (req, res) => {

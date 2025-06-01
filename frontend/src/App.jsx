@@ -12,6 +12,7 @@ import GuestDetailPage from "./pages/guests/GuestDetailsPage";
 import EventPage from "./pages/events/EventPage";
 import RVPSPage from "./pages/rvps/RVPSPage";
 import ProfilePage from "./pages/profile/ProfilePage";
+import EventDetailPage from "./pages/events/EventDetailPage";
 
 function App() {
   // FIX: Destructure 'error' from useAuth
@@ -54,6 +55,10 @@ function App() {
           <Route
             path="/events"
             element={authUser ? <EventPage /> : <Navigate to={"/login"} />}
+          />
+          <Route
+            path="/events/:eventId"
+            element={authUser ? <EventDetailPage /> : <Navigate to={"/login"} />}
           />
           <Route
             path="/rvps"
