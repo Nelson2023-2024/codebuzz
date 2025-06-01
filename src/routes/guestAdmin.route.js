@@ -6,7 +6,7 @@ import { adminRoute, protectRoute } from "../middleware/protectRoute.js";
 
 const router = Router();
 
-router.post('/', async (req, res) => {
+router.post('/',protectRoute, adminRoute, async (req, res) => {
     try {
         const { firstName, lastName, email, phone, company, password, role } = req.body; // Destructure password and role
 
