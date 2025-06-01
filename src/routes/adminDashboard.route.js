@@ -3,11 +3,12 @@ import { Guest } from "../models/Guest.model.js";
 import { Event } from "../models/Event.model.js";
 import { RSVP } from "../models/RSVP.model.js";
 import { EmailLog } from "../models/EmailLog.model.js";
+import { adminRoute, protectRoute } from "../middleware/protectRoute.js";
 
 const router = Router();
 
 // GET /api/admin-dashboard/metrics
-router.get("/metrics", async (req, res) => {
+router.get("/metrics",protectRoute,adminRoute, async (req, res) => {
   try {
     const [
       totalGuests,
