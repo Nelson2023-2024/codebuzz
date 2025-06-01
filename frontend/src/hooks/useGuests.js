@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 
 export function useGetAllGuests() {
   const {
-    data: guests,
+    data,
     isLoading,
     isError,
     error,
@@ -27,8 +27,8 @@ export function useGetAllGuests() {
         }
 
         const data = await response.json();
-        // The backend returns { guests: [...] }, so we need to access data.guests
-        return data.guests;
+        // Return the entire data object which contains both guests and totalCount
+        return data;
       } catch (error) {
         console.error("Error fetching guests:", error);
         throw error;
@@ -39,7 +39,11 @@ export function useGetAllGuests() {
     },
   });
 
-  return { guests, isLoading, isError, error };
+  // Extract guests and totalCount from the data, with fallbacks
+  const guests = data?.guests || [];
+  const totalCount = data?.totalCount || 0;
+
+  return { guests, totalCount, isLoading, isError, error };
 }
 
 export function useDeleteGuest() {

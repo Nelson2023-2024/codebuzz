@@ -27,7 +27,8 @@ import {
   DialogTrigger,
 } from "../../components/ui/dialog";
 import { Label } from "../../components/ui/label";
-import { ChevronDown, MoreHorizontal } from "lucide-react";
+import { Card, CardContent } from "../../components/ui/card";
+import { ChevronDown, MoreHorizontal, Users } from "lucide-react";
 import { useGetAllGuests, useDeleteGuest, useCreateGuest } from "../../hooks/useGuests";
 
 // Skeleton Component for Loading State
@@ -36,92 +37,92 @@ const GuestsTableSkeleton = () => {
     <div className="p-6">
       {/* Header Section Skeleton */}
       <div className="flex justify-between items-center mb-6">
-        <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-        <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+        <div className="h-8 bg-muted rounded w-48 animate-pulse"></div>
+        <div className="h-10 bg-muted rounded w-32 animate-pulse"></div>
+      </div>
+
+      {/* Stats Section Skeleton */}
+      <div className="mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-muted rounded animate-pulse"></div>
+              <div>
+                <div className="h-4 bg-muted rounded w-24 animate-pulse mb-2"></div>
+                <div className="h-6 bg-muted rounded w-16 animate-pulse"></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search and Filter Section Skeleton */}
       <div className="flex gap-4 mb-6">
-        {/* Search Input Skeleton */}
         <div className="relative flex-1">
-          <div className="h-10 bg-gray-200 rounded animate-pulse"></div>
+          <div className="h-10 bg-muted rounded animate-pulse"></div>
         </div>
-
-        {/* Company Filter Skeleton */}
-        <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
-
-        {/* Status Filter Skeleton */}
-        <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
+        <div className="h-10 bg-muted rounded w-32 animate-pulse"></div>
+        <div className="h-10 bg-muted rounded w-32 animate-pulse"></div>
       </div>
 
       {/* Table Skeleton */}
-      <div className="rounded-lg shadow overflow-hidden">
+      <Card>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>
-                <div className="h-5 bg-gray-200 rounded w-16 animate-pulse"></div>
+                <div className="h-5 bg-muted rounded w-16 animate-pulse"></div>
               </TableHead>
               <TableHead>
-                <div className="h-5 bg-gray-200 rounded w-24 animate-pulse"></div>
+                <div className="h-5 bg-muted rounded w-24 animate-pulse"></div>
               </TableHead>
               <TableHead>
-                <div className="h-5 bg-gray-200 rounded w-20 animate-pulse"></div>
+                <div className="h-5 bg-muted rounded w-20 animate-pulse"></div>
               </TableHead>
               <TableHead>
-                <div className="h-5 bg-gray-200 rounded w-16 animate-pulse"></div>
+                <div className="h-5 bg-muted rounded w-16 animate-pulse"></div>
               </TableHead>
               <TableHead>
-                <div className="h-5 bg-gray-200 rounded w-20 animate-pulse"></div>
+                <div className="h-5 bg-muted rounded w-20 animate-pulse"></div>
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {/* Generate 8 skeleton rows */}
             {Array.from({ length: 8 }).map((_, index) => (
               <TableRow key={index}>
-                {/* Name Column Skeleton */}
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gray-200 animate-pulse"></div>
+                    <div className="w-9 h-9 rounded-full bg-muted animate-pulse"></div>
                     <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-32 animate-pulse"></div>
-                      <div className="h-3 bg-gray-200 rounded w-40 animate-pulse"></div>
+                      <div className="h-4 bg-muted rounded w-32 animate-pulse"></div>
+                      <div className="h-3 bg-muted rounded w-40 animate-pulse"></div>
                     </div>
                   </div>
                 </TableCell>
-                
-                {/* Company Column Skeleton */}
                 <TableCell>
-                  <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                  <div className="h-4 bg-muted rounded w-24 animate-pulse"></div>
                 </TableCell>
-                
-                {/* Phone Column Skeleton */}
                 <TableCell>
-                  <div className="h-4 bg-gray-200 rounded w-28 animate-pulse"></div>
+                  <div className="h-4 bg-muted rounded w-28 animate-pulse"></div>
                 </TableCell>
-                
-                {/* Status Column Skeleton */}
                 <TableCell>
-                  <div className="h-6 bg-gray-200 rounded-full w-16 animate-pulse"></div>
+                  <div className="h-6 bg-muted rounded-full w-16 animate-pulse"></div>
                 </TableCell>
-                
-                {/* Actions Column Skeleton */}
                 <TableCell>
-                  <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-8 w-8 bg-muted rounded animate-pulse"></div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 };
 
 const GuestPage = () => {
   const navigate = useNavigate();
-  const { guests, isLoading, isError, error } = useGetAllGuests();
+  const { guests, totalCount, isLoading, isError, error } = useGetAllGuests();
   const { deleteGuest, isDeleting } = useDeleteGuest();
   const { createGuest, isCreating } = useCreateGuest();
   const [searchTerm, setSearchTerm] = useState("");
@@ -186,7 +187,7 @@ const GuestPage = () => {
 
   if (isError) {
     return (
-      <div className="flex justify-center items-center h-full text-red-500">
+      <div className="flex justify-center items-center h-full text-destructive">
         Error: {error.message}
       </div>
     );
@@ -330,6 +331,23 @@ const GuestPage = () => {
         </Dialog>
       </div>
 
+      {/* Total Guest Count Display */}
+      <div className="mb-6">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Guests</p>
+                <p className="text-2xl font-bold">{totalCount}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Search and Filter Section */}
       <div className="flex gap-4 mb-6">
         <div className="relative flex-1">
@@ -340,7 +358,7 @@ const GuestPage = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"
@@ -397,8 +415,18 @@ const GuestPage = () => {
         </DropdownMenu>
       </div>
 
+      {/* Results Summary */}
+      <div className="mb-4">
+        <p className="text-sm text-muted-foreground">
+          Showing {filteredGuests.length} of {totalCount} guests
+          {searchTerm && ` for "${searchTerm}"`}
+          {selectedCompany !== "All" && ` in ${selectedCompany}`}
+          {selectedStatus !== "All" && ` with ${selectedStatus.toLowerCase()} status`}
+        </p>
+      </div>
+
       {/* Guest Table */}
-      <div className="rounded-lg shadow overflow-hidden">
+      <Card>
         <Table>
           <TableHeader>
             <TableRow>
@@ -414,12 +442,12 @@ const GuestPage = () => {
               <TableRow key={guest._id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-semibold text-sm">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
                       {`${guest.firstName[0]}${guest.lastName[0]}`.toUpperCase()}
                     </div>
                     <div>
                       <div className="font-medium">{`${guest.firstName} ${guest.lastName}`}</div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-muted-foreground">
                         {guest.email}
                       </div>
                     </div>
@@ -431,8 +459,8 @@ const GuestPage = () => {
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-semibold ${
                       guest.isActive
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                        : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
                     }`}
                   >
                     {guest.isActive ? "Active" : "Inactive"}
@@ -453,7 +481,7 @@ const GuestPage = () => {
                       <DropdownMenuItem>Edit guest</DropdownMenuItem>
                       <DropdownMenuItem>Send invitation</DropdownMenuItem>
                       <DropdownMenuItem 
-                        className="text-red-600" 
+                        className="text-destructive focus:text-destructive" 
                         onClick={() => handleDeleteGuest(guest)}
                         disabled={isDeleting}
                       >
@@ -466,14 +494,14 @@ const GuestPage = () => {
             ))}
             {filteredGuests.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-4 text-gray-500">
+                <TableCell colSpan={5} className="text-center py-4 text-muted-foreground">
                   No guests found.
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 };
