@@ -265,4 +265,34 @@ router.post('/events', async (req, res) => {
         res.status(500).json({ error: error.message || 'Internal server error while creating event.' });
     }
 });
+
+// Delete an event
+router.delete('/events/:eventId', async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        // Validate eventId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(eventId)) {
+            return res.status(400).json({ error: 'Invalid Event ID format' });
+        }
+
+        // Find the event and delete it
+        const result = await Event.findByIdAndDelete(eventId);
+
+        if (!result) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Optionally, also delete associated RSVPs and EmailLogs for this event
+        await RSVP.deleteMany({ event: eventId });
+        await EmailLog.deleteMany({ event: eventId });
+
+        res.status(200).json({ message: 'Event and associated data deleted successfully!' });
+
+    } catch (error) {
+        console.error('Delete event error:', error);
+        res.status(500).json({ error: error.message || 'Internal server error while deleting event.' });
+    }
+});
+
 export { router as adminRoutes};
