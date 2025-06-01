@@ -63,4 +63,42 @@ router.get("/me", protectRoute, async (req, res) => {
   }
 });
 
+// Update current user's profile
+router.put("/update-profile", protectRoute, async (req, res) => {
+  try {
+    const { firstName, lastName, phone, company } = req.body;
+
+    const user = await Guest.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update fields
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (phone) user.phone = phone;
+    if (company) user.company = company;
+
+    
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        fullName: user.firstName + " " + user.lastName,
+        email: user.email,
+        phone: user.phone,
+        company: user.company,
+        role: user.role,
+      },
+    });
+
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 export { router as authRoutes };
