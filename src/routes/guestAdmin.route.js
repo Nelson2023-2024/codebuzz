@@ -51,24 +51,34 @@ router.post('/',protectRoute, adminRoute, async (req, res) => {
     }
 });
 
-// Route to get all guests including total count
 router.get("/", protectRoute, adminRoute, async (req, res) => {
     try {
-        // Find all guests, select specific fields, and sort by creation date
+        // Find all guests in the database.
+        // .select('-password -__v') excludes the 'password' and '__v' (version key) fields
+        // from the returned guest objects for security and cleaner data.
+        // .sort({ createdAt: -1 }) sorts the results by creation date in descending order,
+        // so the newest guests appear first.
         const guests = await Guest.find({})
-            .select('-password -__v') // Exclude password and __v (version key)
-            .sort({ createdAt: -1 }); // Sort by creation date, newest first
+            .select('-password -__v')
+            .sort({ createdAt: -1 });
 
-        // Get the total count of all guests
-        const totalGuests = await Guest.countDocuments({}); // Get count of all documents
+        // Get the total count of all guest documents in the collection.
+        // This is a separate, efficient database operation to get only the count.
+        const totalGuests = await Guest.countDocuments({});
 
+        // Send a successful response (HTTP 200 OK)
+        // The response includes a message, the array of guest objects,
+        // and the total count of guests.
         res.status(200).json({
             message: 'Guests retrieved successfully',
             guests: guests,
-            totalCount: totalGuests // Add the total count to the response
+            totalCount: totalGuests // The total count is included here
         });
     } catch (error) {
+        // If an error occurs during the process, log it to the console.
         console.error('Get all guests error:', error);
+        // Send an error response (HTTP 500 Internal Server Error)
+        // The error message is either from the caught error or a generic one.
         res.status(500).json({ error: error.message || 'Internal server error during guest retrieval.' });
     }
 });
