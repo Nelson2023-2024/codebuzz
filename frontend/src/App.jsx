@@ -15,6 +15,33 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import EventDetailPage from "./pages/events/EventDetailPage";
 import RSVPsPage from "./pages/rvps/RSVPsPage";
 
+// Component to protect admin-only routes
+const AdminRoute = ({ children }) => {
+  const { authUser } = useAuth();
+  
+  if (!authUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (authUser.role !== "admin") {
+    // Redirect non-admin users to dashboard with a message
+    return <Navigate to="/" replace />;
+  }
+  
+  return children;
+};
+
+// Component to protect authenticated routes
+const ProtectedRoute = ({ children }) => {
+  const { authUser } = useAuth();
+  
+  if (!authUser) {
+    return <Navigate to="/login" />;
+  }
+  
+  return children;
+};
+
 function App() {
   // FIX: Destructure 'error' from useAuth
   const { authUser, isLoading, isError, error } = useAuth();
@@ -29,7 +56,6 @@ function App() {
     );
   }
 
-
   return (
     <div className="flex h-screen ">
       {authUser && <Sidebar />}
@@ -39,35 +65,64 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={authUser ? <HomePage /> : <Navigate to={"/login"} />}
+            element={
+              <ProtectedRoute>
+                <HomePage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/login"
-            element={!authUser ? <LoginPage /> : <Navigate to={"/login"} />}
+            element={!authUser ? <LoginPage /> : <Navigate to="/" />}
           />
+          {/* Admin-only routes */}
           <Route
             path="/guests"
-            element={authUser ? <GuestPage /> : <Navigate to={"/login"} />}
+            element={
+              <AdminRoute>
+                <GuestPage />
+              </AdminRoute>
+            }
           />
           <Route
             path="/guests/:guestId"
-            element={authUser ? <GuestDetailPage /> : <Navigate to={"/login"} />}
+            element={
+              <AdminRoute>
+                <GuestDetailPage />
+              </AdminRoute>
+            }
           />
           <Route
             path="/events"
-            element={authUser ? <EventPage /> : <Navigate to={"/login"} />}
+            element={
+              <ProtectedRoute>
+                <EventPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/events/:eventId"
-            element={authUser ? <EventDetailPage /> : <Navigate to={"/login"} />}
+            element={
+              <ProtectedRoute>
+                <EventDetailPage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/rvps"
-            element={authUser ? <RSVPsPage /> : <Navigate to={"/login"} />}
+            element={
+              <AdminRoute>
+                <RSVPsPage />
+              </AdminRoute>
+            }
           />
           <Route
             path="/profile"
-            element={authUser ? <ProfilePage /> : <Navigate to={"/login"} />}
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
           />
         </Routes>
         <Toaster />

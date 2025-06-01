@@ -34,13 +34,45 @@ const Sidebar = () => {
     logout();
   }
 
-  // Navigation items
+  // Check if user is admin
+  const isAdmin = authUser?.role === "admin";
+
+  // Navigation items with role-based access control
   const navItems = [
-    { icon: LayoutDashboard, label: "Dashboard", path: "/", active: true },
-    { icon: Users, label: "Guests", path: "/guests" },
-    { icon: DoorOpen, label: "Events", path: "/events" },
-    { icon: CalendarCheck, label: "RVPS", path: "/rvps" },
+    { 
+      icon: LayoutDashboard, 
+      label: "Dashboard", 
+      path: "/", 
+      active: true,
+      adminOnly: false // Dashboard is accessible to all users
+    },
+    { 
+      icon: Users, 
+      label: "Guests", 
+      path: "/guests",
+      adminOnly: true // Only admins can see guests
+    },
+    { 
+      icon: DoorOpen, 
+      label: "Events", 
+      path: "/events",
+      adminOnly: false // Events can be visible to all users (adjust as needed)
+    },
+    { 
+      icon: CalendarCheck, 
+      label: "RVPS", 
+      path: "/rvps",
+      adminOnly: true // Only admins can see RSVPs
+    },
   ];
+
+  // Filter navigation items based on user role
+  const visibleNavItems = navItems.filter(item => {
+    if (item.adminOnly && !isAdmin) {
+      return false; // Hide admin-only items from regular users
+    }
+    return true; // Show item to all users or admins
+  });
 
   // Function to get initials from first and last name
   const getInitials = (firstName, lastName) => {
@@ -55,14 +87,16 @@ const Sidebar = () => {
         {/* Logo/Header */}
         <div className="mb-8">
           <Link to="/" className="flex items-center">
-            <h1 className="text-xl font-bold text-primary">AEMS Admin</h1>
+            <h1 className="text-xl font-bold text-primary">
+              AEMS {isAdmin ? "Admin" : "User"}
+            </h1>
           </Link>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1">
           <ul className="space-y-1">
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <li key={item.path}>
                 <Link
                   to={item.path}
@@ -79,6 +113,15 @@ const Sidebar = () => {
               </li>
             ))}
           </ul>
+
+          {/* Role indicator (optional) */}
+          {!isAdmin && (
+            <div className="mt-4 p-2 bg-muted rounded-md">
+              <p className="text-xs text-muted-foreground text-center">
+                User Access
+              </p>
+            </div>
+          )}
         </nav>
 
         {/* User profile and theme toggle */}
@@ -115,7 +158,10 @@ const Sidebar = () => {
               </Avatar>
               <div className="flex flex-col">
                 <span className="text-sm font-medium">
-                  {authUser?.fullName || "Admin"}
+                  {authUser?.fullName || "User"}
+                </span>
+                <span className="text-xs text-muted-foreground capitalize">
+                  {authUser?.role || "guest"}
                 </span>
               </div>
             </Link>
