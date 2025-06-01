@@ -3,7 +3,7 @@ import { MoonIcon, SunIcon } from "@radix-ui/react-icons";
 import { Link } from "react-router-dom";
 import { cn } from "../../lib/utils";
 import { useLogout } from "../../hooks/useLogout";
-import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "../../hooks/useAuth"; // Import your custom hook
 import { Button } from "../ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 
@@ -23,10 +23,10 @@ const Sidebar = () => {
   const { setTheme, theme } = useTheme();
   const { logout, isLoading } = useLogout();
 
-  // Get auth user data
-  const { data: authUser } = useQuery({
-    queryKey: ["authUser"],
-  });
+  // Use your custom useAuth hook instead of useQuery directly
+  const { authUser } = useAuth();
+
+  console.log("Sidebar authUSer", authUser)
 
   function handleLogout(event) {
     event.preventDefault();
@@ -38,7 +38,7 @@ const Sidebar = () => {
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/", active: true },
     { icon: Users, label: "Guests", path: "/guests" },
-    { icon: DoorOpen, label: "Events", path: "/event" },
+    { icon: DoorOpen, label: "Events", path: "/events" },
     { icon: CalendarCheck, label: "RVPS", path: "/rvps" },
   ];
 

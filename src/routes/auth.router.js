@@ -25,12 +25,15 @@ router.post("/login", async (req, res) => {
 
 
     // Generate JWT token if all checks are passed 
-    const token =await generateToken(user._id, res)
+    const token = await generateToken(user._id, res)
 
     console.log("token:", token)
-    
 
+
+
+    
     res.status(200).json({
+      message: "Logged In succesfully",
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -50,7 +53,7 @@ router.post("/logout", (req, res) => {
 });
 
 // Get current authenticated admin
-router.get("/me",protectRoute, async (req, res) => {
+router.get("/me", protectRoute, async (req, res) => {
   try {
     // Middleware will attach user to req
     const user = await Guest.findById(req.user.id).select("-password");
@@ -60,4 +63,4 @@ router.get("/me",protectRoute, async (req, res) => {
   }
 });
 
-export {router as authRoutes};
+export { router as authRoutes };

@@ -1,5 +1,5 @@
 // hooks/useAuth.js
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const getAuthUserFromLocalStorage = () => {
   try {
@@ -13,6 +13,8 @@ const getAuthUserFromLocalStorage = () => {
 };
 
 export function useAuth() {
+  const queryClient = useQueryClient();
+  
   const {
     data: authUser,
     isLoading,
@@ -29,17 +31,17 @@ export function useAuth() {
           credentials: "include",
           headers: {
             'Content-Type': 'application/json',
-            // Add any other headers your backend expects
           },
         });
 
         console.log("Response status:", response.status);
-        console.log("Response headers:", response.headers);
 
         if (!response.ok) {
           if (response.status === 401 || response.status === 403) {
             console.warn("User not authenticated or forbidden. Clearing local storage.");
             localStorage.removeItem("authUser");
+            // Clear the query cache as well
+            queryClient.setQueryData(["authUser"], null);
             return null;
           }
           if (response.status === 404) {
@@ -60,21 +62,30 @@ export function useAuth() {
 
         const data = await response.json();
         console.log("Auth user data fetched:", data);
+        
+        // Update localStorage and ensure cache consistency
         localStorage.setItem("authUser", JSON.stringify(data));
+        
+        // Explicitly set the query data to ensure all components get the same data
+        queryClient.setQueryData(["authUser"], data);
+        
         return data;
       } catch (err) {
         console.error("Error fetching auth user:", err);
         // Only clear localStorage if it's an auth error, not a network error
         if (err.message.includes("401") || err.message.includes("403") || err.message.includes("not authenticated")) {
           localStorage.removeItem("authUser");
+          queryClient.setQueryData(["authUser"], null);
         }
         throw err;
       }
     },
     initialData: getAuthUserFromLocalStorage(),
     initialDataUpdatedAt: getAuthUserFromLocalStorage() ? Date.now() : 0,
-    staleTime: 5 * 60 * 1000,
-    cacheTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnMount: false, // Don't refetch if we have recent data
+    refetchOnWindowFocus: false, // Don't refetch on window focus
     retry: (failureCount, error) => {
       // Don't retry on 404 or auth errors
       if (error.message.includes("404") || 
@@ -86,6 +97,9 @@ export function useAuth() {
     },
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
+
+  // Debug logging
+  console.log("useAuth hook called - authUser:", authUser, "isLoading:", isLoading);
 
   return { authUser, isLoading, isError, error, isFetching };
 }

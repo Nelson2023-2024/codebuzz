@@ -26,12 +26,6 @@ function App() {
     );
   }
 
-  // Handle a persistent error (e.g., if the /me endpoint always fails)
-  if (isError) {
-    console.error("Error fetching auth user:", error);
-    // If you want to force a redirect to login on persistent error:
-    return <Navigate to="/login" replace />;
-  }
 
   return (
     <div className="flex h-screen ">
