@@ -295,4 +295,41 @@ router.delete('/events/:eventId', async (req, res) => {
     }
 });
 
+// Toggle event active status
+router.patch('/events/:eventId/toggle-status', async (req, res) => {
+    try {
+        const { eventId } = req.params;
+
+        // Validate eventId is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(eventId)) {
+            return res.status(400).json({ error: 'Invalid Event ID format' });
+        }
+
+        // Find the existing event
+        const existingEvent = await Event.findById(eventId);
+        if (!existingEvent) {
+            return res.status(404).json({ error: 'Event not found' });
+        }
+
+        // Toggle the isActive status
+        const updatedEvent = await Event.findByIdAndUpdate(
+            eventId,
+            { isActive: !existingEvent.isActive },
+            { new: true, runValidators: true }
+        );
+
+        const statusText = updatedEvent.isActive ? 'activated' : 'deactivated';
+
+        res.status(200).json({
+            message: `Event ${statusText} successfully!`,
+            event: updatedEvent.toObject(),
+            isActive: updatedEvent.isActive
+        });
+
+    } catch (error) {
+        console.error('Toggle event status error:', error);
+        res.status(500).json({ error: error.message || 'Internal server error while toggling event status.' });
+    }
+});
+
 export { router as adminRoutes};

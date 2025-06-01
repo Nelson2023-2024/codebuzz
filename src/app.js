@@ -23,7 +23,7 @@ app.use(cookieParser())
 app.use(cors({
     origin: 'http://localhost:5173', // EXACTLY your frontend's origin
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Ensure GET is allowed
+    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'], // Ensure GET is allowed
     allowedHeaders: ['Content-Type', 'Authorization'], // Important if you send custom headers
 }));
 app.use(express.json({ limit: '10mb' }));
