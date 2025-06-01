@@ -14,6 +14,7 @@ import RVPSPage from "./pages/rvps/RSVPsPage";
 import ProfilePage from "./pages/profile/ProfilePage";
 import EventDetailPage from "./pages/events/EventDetailPage";
 import RSVPsPage from "./pages/rvps/RSVPsPage";
+import GuestDashBoardPage from "./pages/home/GuestDashBoardPage";
 
 // Component to protect admin-only routes
 const AdminRoute = ({ children }) => {
@@ -121,6 +122,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user-dashboard"
+            element={
+              <ProtectedRoute>
+                <GuestDashBoardPage />
               </ProtectedRoute>
             }
           />
