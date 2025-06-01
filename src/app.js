@@ -12,6 +12,7 @@ import { emailRoutes } from './routes/email.routes.js';
 import { rsvpRoutes } from './routes/rsvp.routes.js';
 import { adminRoutes } from './routes/admin.routes.js';
 import { authRoutes } from './routes/auth.router.js';
+import { adminDashnoardRoutes } from './routes/adminDashboard.route.js';
 
 configDotenv();
 
@@ -43,6 +44,7 @@ app.use("/api/email", emailRoutes);
 app.use("/api/rsvp", rsvpRoutes);
 app.use("/api/admin", adminRoutes); // Admin routes under /api/admin
 app.use("/api/auth", authRoutes); // Admin routes under /api/admin
+app.use("/api/admin-dashboard", adminDashnoardRoutes); // Admin routes under /api/admin
 
 // Bull dashboard
 app.use('/admin/queues', bullRouter);
