@@ -334,10 +334,10 @@ const EventsPage = () => {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Events Management</h1>
-            <p className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex items-center gap-2">
               <CalendarCheck className="h-5 w-5 text-muted-foreground" />
               <div className="h-5 bg-gray-200 rounded w-64 animate-pulse"></div>
-            </p>
+            </div>
           </div>
           <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
         </div>
@@ -376,12 +376,12 @@ const EventsPage = () => {
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Events Management</h1>
-          <p className="text-muted-foreground mt-2 flex items-center gap-2">
+          <div className="text-muted-foreground mt-2 flex items-center gap-2">
             <CalendarCheck className="h-5 w-5" />
             <span>
               {totalEvents} total events • {activeEvents} active • {upcomingEvents} upcoming
             </span>
-          </p>
+          </div>
         </div>
 
         {/* Create Event Button - only for admins */}
