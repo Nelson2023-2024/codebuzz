@@ -1,5 +1,6 @@
 // pages/eventsPage.jsx
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Add this import
 import {
   Card,
   CardHeader,
@@ -34,6 +35,7 @@ import { useAuth } from "../../hooks/useAuth";
 import CreateEventModal from "./CreateEventModal";
 
 const EventCard = ({ event, authUser, isAdmin }) => {
+  const navigate = useNavigate(); // Add this line
   const { mutate: deleteEvent, isLoading: isDeleting } = useDeleteEvent();
   const { mutate: toggleStatus, isLoading: isToggling } = useToggleEventStatus();
 
@@ -75,6 +77,11 @@ const EventCard = ({ event, authUser, isAdmin }) => {
     toggleStatus(event.id);
   };
 
+  // Handle navigate to event detail
+  const handleEventClick = () => {
+    navigate(`/events/${event.id || event._id}`);
+  };
+
   // Get event status color
   const getEventStatusColor = () => {
     if (isEventPast) return "destructive";
@@ -101,7 +108,12 @@ const EventCard = ({ event, authUser, isAdmin }) => {
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <CardTitle className="text-lg font-bold text-left">{event.name}</CardTitle>
+            <CardTitle 
+              className="text-lg font-bold text-left cursor-pointer hover:text-blue-600 transition-colors"
+              onClick={handleEventClick}
+            >
+              {event.name}
+            </CardTitle>
             <CardDescription className="mt-1 flex items-center gap-2 text-left">
               <Calendar className="h-4 w-4" />
               <span>{formatDate(event.eventDate)}</span>
@@ -167,75 +179,67 @@ const EventCard = ({ event, authUser, isAdmin }) => {
 
       <CardFooter className="bg-muted/50 pt-2 pb-2">
         <div className="w-full flex gap-2">
-          {/* Toggle Status Button - Always visible for admins */}
-          {isAdmin && (
-            <Button
-              className="flex-1 cursor-pointer"
-              variant={event.isActive ? "destructive" : "default"}
-              size="sm"
-              onClick={handleToggleStatus}
-              disabled={isToggling}
-            >
-              {isToggling ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : event.isActive ? (
-                <>
-                  <UserX className="mr-2 h-4 w-4" />
-                  Deactivate
-                </>
-              ) : (
-                <>
-                  <UserCheck className="mr-2 h-4 w-4" />
-                  Activate
-                </>
-              )}
-            </Button>
-          )}
+          {/* View Details Button - Always visible */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEventClick}
+            className="flex-1 cursor-pointer"
+          >
+            View Details
+          </Button>
 
-          {/* Edit Button - only for admins */}
+          {/* Admin-only buttons */}
           {isAdmin && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                toast.success("Edit functionality coming soon!");
-                // TODO: Implement edit modal
-              }}
-              className="cursor-pointer flex-shrink-0"
-              title="Edit event"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          )}
+            <>
+              {/* Toggle Status Button */}
+              <Button
+                variant={event.isActive ? "destructive" : "default"}
+                size="sm"
+                onClick={handleToggleStatus}
+                disabled={isToggling}
+                className="cursor-pointer flex-shrink-0"
+                title={event.isActive ? "Deactivate event" : "Activate event"}
+              >
+                {isToggling ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : event.isActive ? (
+                  <UserX className="h-4 w-4" />
+                ) : (
+                  <UserCheck className="h-4 w-4" />
+                )}
+              </Button>
 
-          {/* Delete Button - only for admins */}
-          {isAdmin && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteEvent}
-              disabled={isDeleting}
-              className="cursor-pointer flex-shrink-0"
-              title="Delete event"
-            >
-              {isDeleting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-            </Button>
-          )}
+              {/* Edit Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  toast.success("Edit functionality coming soon!");
+                  // TODO: Implement edit modal
+                }}
+                className="cursor-pointer flex-shrink-0"
+                title="Edit event"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
 
-          {/* For non-admin users, show registration status */}
-          {!isAdmin && (
-            <div className="flex-1 text-center py-2">
-              <span className="text-sm text-muted-foreground">
-                {isRegistrationOpen ? "Registration Open" : "Registration Closed"}
-              </span>
-            </div>
+              {/* Delete Button */}
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteEvent}
+                disabled={isDeleting}
+                className="cursor-pointer flex-shrink-0"
+                title="Delete event"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </>
           )}
         </div>
       </CardFooter>
@@ -439,7 +443,7 @@ const EventsPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {eventsData?.events?.map((event) => (
           <EventCard
-            key={event.id}
+            key={event.id || event._id}
             event={event}
             authUser={authUser}
             isAdmin={isAdmin}

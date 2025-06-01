@@ -7,7 +7,7 @@ import { adminRoute, protectRoute } from '../middleware/protectRoute.js';
 const router = Router();
 
 // RSVP endpoint - Refactored to remove transactions
-router.post('/', protectRoute, adminRoute, async (req, res) => {
+router.post('/', protectRoute, async (req, res) => {
     try {
         const { token, eventId, status, specialRequests, dietaryRestrictions } = req.body;
 
