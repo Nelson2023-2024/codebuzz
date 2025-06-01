@@ -14,7 +14,7 @@ router.post("/login", async (req, res) => {
 
   try {
     const user = await Guest.findOne({ email });
-    if (!user) return res.status(401).json({ message: "Invalid credentials" });
+    if (!user) return res.status(404).json({ message: "Invalid credentials", error: "Email not found" });
 
     //if email existed
     const comparePassword = await bcrypt.compare(password, user.password);
@@ -31,7 +31,7 @@ router.post("/login", async (req, res) => {
 
 
 
-    
+
     res.status(200).json({
       message: "Logged In succesfully",
       user: {

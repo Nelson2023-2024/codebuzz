@@ -42,6 +42,13 @@ const Sidebar = () => {
     { icon: CalendarCheck, label: "RVPS", path: "/rvps" },
   ];
 
+  // Function to get initials from first and last name
+  const getInitials = (firstName, lastName) => {
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+    return (firstInitial + lastInitial) || "A"; // Fallback to "A" if no names
+  };
+
   return (
     <div className="bg-background w-64 h-screen flex-shrink-0 border-r border-border">
       <div className="flex flex-col h-full p-4">
@@ -103,7 +110,7 @@ const Sidebar = () => {
                   alt={authUser?.fullName}
                 />
                 <AvatarFallback>
-                  {authUser?.fullName?.charAt(0).toUpperCase() || "A"}
+                  {getInitials(authUser?.firstName, authUser?.lastName)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
