@@ -29,39 +29,42 @@ A scalable event management system designed to handle 500,000+ guests with bulk 
 * **Radix UI:** Accessible component library
 * **TanStack Query:** Data fetching and state management
 
+## Trade-offs and Considerations
+### Technology Choices
+**MongoDB vs PostgreSQL**
+
+* Chosen: MongoDB for flexible schema and horizontal scaling
+* Trade-off: Less strict data consistency for better performance
+* Rationale: Document-based storage suits varying guest data structures
+
+**Bull Queue vs AWS SQS**
+
+* Chosen: Bull Queue with Redis for cost-effectiveness
+* Trade-off: Self-managed infrastructure vs managed service
+* Rationale: Better control over queue processing and lower costs
+
+**Monolith vs Microservices**
+
+* Chosen: Microservices architecture
+
+* Trade-off: Higher operational complexity vs independent service deployment and scalability
+
+* Rationale: Services are containerized independently (frontend, backend, Redis, MongoDB, Redis Commander), enabling modular development, easier debugging, and future scalability.
+
+**⚛️ React vs Other Frontend Libraries (e.g., Vue, Angular, Svelte)**
+| Criteria | React |       Vue / Angular / Svelte                  |  TradeOffs                     |
+| ------ | ------ |-----------------------|-----------------------|
+| Flexibility | Library only — BYO routing, state, etc. |Vue and Angular are more opinionated|React gives freedom, but this can lead to inconsistent patterns in large teams.
+| Community | Massive ecosystem, mature tools |Vue is growing; Angular is stable|React has the widest plugin/library support.
+| Performance |Great with optimizations |Svelte often beats others in raw speed|React has good performance, but needs tuning (memo, virtualization, etc).
 
 
-## Key Features
-1. **Bulk Email Distribution**
+**🚀 Node.js + Express vs Other Backend Frameworks (e.g., Django, Spring Boot, Laravel)**
+| Criteria | Node.js + Express |       Alternatives (Django, Spring, etc.)                  |  TradeOffs                     |
+| ------ | ------ |-----------------------|-----------------------|
+| Learning Curve | Easy for JS developers; minimal setup |Django (Python), Spring (Java) are more structured and verbose|Express is fast to start with, but can lead to messy architecture without discipline..
+| Scalability | Horizontal scaling is easy |Spring Boot is better for enterprise-level scaling|Express suits microservices and startups better; heavy apps may benefit from more opinionated frameworks.
+| Performance |	Non-blocking I/O allows high concurrency |Blocking or thread-based models can be slower under I/O load|Node.js excels at handling many simultaneous connections efficiently.
 
-* Batch processing of emails to prevent rate limiting
-* Personalized invitation links with unique tokens
-* Queue-based system using Bull for reliable delivery
-* Retry mechanism for failed email deliveries
-* Real-time tracking of email status
-
-2. **Reservation System**
-
-* Secure RSVP links with JWT tokens
-* Capacity management with automatic waitlisting
-*Concurrent request handling for peak traffic
-* Duplicate prevention through database constraints
-* Real-time seat availability updates
-
-3. **Guest Management**
-
-* Comprehensive guest database with contact information
-* RSVP status tracking and history
-* Guest information updates through admin interface
-* Bulk import/export functionality
-* Email delivery logs and analytics
-
-4. **Admin Dashboard**
-
-* Real-time RSVP statistics and analytics
-* Guest data export in CSV format
-* Email campaign management and monitoring
-* Queue status monitoring through Bull Dashboard
-* Event capacity management
 
 
