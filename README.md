@@ -29,6 +29,10 @@ A scalable event management system designed to handle 500,000+ guests with bulk 
 * **Radix UI:** Accessible component library
 * **TanStack Query:** Data fetching and state management
 
+## Database Design Image
+![Entity Relationship Diagram](./prisma-erd.svg)
+
+
 ## Trade-offs and Considerations
 ### Technology Choices
 **MongoDB vs PostgreSQL**
