@@ -278,22 +278,93 @@ router.get('/all', protectRoute, adminRoute, async (req, res) => {
   }
 });
 
-// Get RSVP data for logged-in user
 router.get('/', protectRoute, async (req, res) => {
     try {
         const guest = req.user;
 
-        // Get the most recent active event
-        const event = await Event.findOne({ isActive: true }).sort({ eventDate: 1 });
-        if (!event) {
-            return res.status(404).json({ error: 'No active events found' });
-        }
+        // Find all RSVPs for the logged-in guest
+        const allUserRsvps = await RSVP.find({ guest: guest._id })
+            .populate({
+                path: 'event',
+                select: 'name description eventDate venue maxCapacity currentReservations waitlistCount registrationDeadline isActive'
+            })
+            .sort({ rsvpDate: -1 }); // Sort by most recent RSVP first
 
-        // Check if already responded
-        const existingRSVP = await RSVP.findOne({ guest: guest._id, event: event._id });
+        // Format the RSVPs for the response
+        const formattedRsvps = allUserRsvps.map(rsvpDoc => {
+            const event = rsvpDoc.event;
 
-        const spotsRemaining = Math.max(0, event.maxCapacity - event.currentReservations);
-        const isRegistrationOpen = !event.registrationDeadline || new Date() <= event.registrationDeadline;
+            // Handle cases where the event might have been deleted or is inactive
+            let eventInfo = null;
+            let spotsRemaining = 0;
+            let isRegistrationOpen = false;
+            let isFull = false;
+
+            if (event && event.isActive) {
+                spotsRemaining = Math.max(0, event.maxCapacity - event.currentReservations);
+                isRegistrationOpen = !event.registrationDeadline || new Date() <= event.registrationDeadline;
+                isFull = spotsRemaining === 0;
+
+                eventInfo = {
+                    id: event._id,
+                    name: event.name,
+                    description: event.description,
+                    eventDate: event.eventDate,
+                    venue: event.venue,
+                    currentReservations: event.currentReservations,
+                    maxCapacity: event.maxCapacity,
+                    spotsRemaining,
+                    waitlistCount: event.waitlistCount,
+                    registrationDeadline: event.registrationDeadline,
+                    isRegistrationOpen,
+                    isFull
+                };
+            } else if (event) {
+                 // Event exists but is inactive
+                 eventInfo = {
+                    id: event._id,
+                    name: event.name + ' (Inactive)',
+                    description: event.description,
+                    eventDate: event.eventDate,
+                    venue: event.venue,
+                    currentReservations: event.currentReservations,
+                    maxCapacity: event.maxCapacity,
+                    spotsRemaining: 0, // No spots remaining if inactive
+                    waitlistCount: event.waitlistCount,
+                    registrationDeadline: event.registrationDeadline,
+                    isRegistrationOpen: false, // Not open if inactive
+                    isFull: true // Consider full if inactive
+                };
+            } else {
+                // Event might have been deleted
+                eventInfo = {
+                    id: null,
+                    name: 'Deleted Event',
+                    description: '',
+                    eventDate: null,
+                    venue: 'N/A',
+                    currentReservations: 0,
+                    maxCapacity: 0,
+                    spotsRemaining: 0,
+                    waitlistCount: 0,
+                    registrationDeadline: null,
+                    isRegistrationOpen: false,
+                    isFull: true
+                };
+            }
+
+
+            return {
+                rsvpId: rsvpDoc._id, // Add an ID for the RSVP document itself
+                status: rsvpDoc.status,
+                seatNumber: rsvpDoc.seatNumber || null,
+                specialRequests: rsvpDoc.specialRequests || '',
+                dietaryRestrictions: rsvpDoc.dietaryRestrictions || '',
+                rsvpDate: rsvpDoc.rsvpDate,
+                checkInStatus: rsvpDoc.checkInStatus || 'not_arrived',
+                event: eventInfo // Include the event details
+            };
+        });
 
         res.json({
             guest: {
@@ -301,33 +372,12 @@ router.get('/', protectRoute, async (req, res) => {
                 lastName: guest.lastName,
                 email: guest.email
             },
-            event: {
-                id: event._id,
-                name: event.name,
-                description: event.description,
-                eventDate: event.eventDate,
-                venue: event.venue,
-                currentReservations: event.currentReservations,
-                maxCapacity: event.maxCapacity,
-                spotsRemaining,
-                waitlistCount: event.waitlistCount,
-                registrationDeadline: event.registrationDeadline,
-                isRegistrationOpen,
-                isFull: spotsRemaining === 0
-            },
-            hasResponded: !!existingRSVP,
-            existingResponse: existingRSVP ? {
-                status: existingRSVP.status,
-                seatNumber: existingRSVP.seatNumber,
-                specialRequests: existingRSVP.specialRequests,
-                dietaryRestrictions: existingRSVP.dietaryRestrictions,
-                rsvpDate: existingRSVP.rsvpDate,
-                checkInStatus: existingRSVP.checkInStatus
-            } : null
+            totalRsvps: formattedRsvps.length,
+            rsvps: formattedRsvps
         });
 
     } catch (error) {
-        console.error('Get RSVP data error:', error);
+        console.error('Get all user RSVPs error:', error);
         res.status(500).json({
             error: 'Unable to fetch RSVP information',
             requestId: req.id

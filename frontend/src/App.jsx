@@ -17,6 +17,7 @@ import RSVPsPage from "./pages/rvps/RSVPsPage";
 import GuestDashBoardPage from "./pages/home/GuestDashBoardPage";
 import EmailLogsPage from "./pages/emails/EmailLogsPage";
 import EmailManagementPage from "./pages/emails/EmailManagementPage";
+import UserRSVPPage from "./pages/rvps/UserRSVPPage";
 
 // Component to protect admin-only routes
 const AdminRoute = ({ children }) => {
@@ -150,6 +151,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <GuestDashBoardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-rsvp"
+            element={
+              <ProtectedRoute>
+                <UserRSVPPage />
               </ProtectedRoute>
             }
           />

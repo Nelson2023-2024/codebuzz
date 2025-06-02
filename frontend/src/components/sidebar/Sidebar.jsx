@@ -8,17 +8,19 @@ import { Button } from "../ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 
 // Import icons from Lucide React instead of various sources
-import { 
-  LayoutDashboard, 
-  Users, 
-  CalendarCheck, 
-  DollarSign, 
-  Settings, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  Users,
+  CalendarCheck,
+  DollarSign,
+  Settings,
+  LogOut,
   DoorOpen,
   Bell,
   Mail,
-  Send
+  Send,
+  User,
+  CheckSquare,
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -28,7 +30,7 @@ const Sidebar = () => {
   // Use your custom useAuth hook instead of useQuery directly
   const { authUser } = useAuth();
 
-  console.log("Sidebar authUSer", authUser)
+  console.log("Sidebar authUSer", authUser);
 
   function handleLogout(event) {
     event.preventDefault();
@@ -41,57 +43,77 @@ const Sidebar = () => {
 
   // Navigation items with role-based access control
   const navItems = [
-    { 
-      icon: LayoutDashboard, 
-      label: "Dashboard", 
-      path: "/", 
+    // Admin Dashboard - only visible to admins
+    {
+      icon: LayoutDashboard,
+      label: "Admin Dashboard",
+      path: "/",
       active: true,
-      adminOnly: false // Dashboard is accessible to all users
+      adminOnly: true, // Only admins can see admin dashboard
     },
-    { 
-      icon: Users, 
-      label: "Guests", 
+    // Guest Dashboard - only visible to guests/non-admins
+    {
+      icon: User,
+      label: "My Dashboard",
+      path: "/user-dashboard",
+      active: true,
+      guestOnly: true, // Only guests can see guest dashboard
+    },
+    {
+      icon: Users,
+      label: "Guests",
       path: "/guests",
-      adminOnly: true // Only admins can see guests
+      adminOnly: true, // Only admins can see guests
     },
-    { 
-      icon: DoorOpen, 
-      label: "Events", 
+    {
+      icon: DoorOpen,
+      label: "Events",
       path: "/events",
-      adminOnly: false // Events can be visible to all users (adjust as needed)
+      adminOnly: false, // Events can be visible to all users (adjust as needed)
     },
-    { 
-      icon: CalendarCheck, 
-      label: "RVPS", 
+    // Admin RSVPs - only visible to admins
+    {
+      icon: CalendarCheck,
+      label: "All RSVPs",
       path: "/rvps",
-      adminOnly: true // Only admins can see RSVPs
+      adminOnly: true, // Only admins can see all RSVPs
     },
-    { 
-      icon: Send, 
-      label: "Email Management", 
+    // User RSVP - only visible to guests
+    {
+      icon: CheckSquare,
+      label: "My RSVP",
+      path: "/my-rsvp",
+      guestOnly: true, // Only guests can see their own RSVP
+    },
+    {
+      icon: Send,
+      label: "Email Management",
       path: "/email-management",
-      adminOnly: true // Only admins can manage emails
+      adminOnly: true, // Only admins can manage emails
     },
-    { 
-      icon: Mail, 
-      label: "Email Logs", 
+    {
+      icon: Mail,
+      label: "Email Logs",
       path: "/email-logs",
-      adminOnly: false // Both users and admins can see their email logs
+      adminOnly: false, // Both users and admins can see their email logs
     },
   ];
 
   // Filter navigation items based on user role
-  const visibleNavItems = navItems.filter(item => {
+  const visibleNavItems = navItems.filter((item) => {
     if (item.adminOnly && !isAdmin) {
       return false; // Hide admin-only items from regular users
     }
-    return true; // Show item to all users or admins
+    if (item.guestOnly && isAdmin) {
+      return false; // Hide guest-only items from admins
+    }
+    return true; // Show item to appropriate users
   });
 
   // Function to get initials from first and last name
   const getInitials = (firstName, lastName) => {
-    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : '';
-    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : '';
+    const firstInitial = firstName ? firstName.charAt(0).toUpperCase() : "";
+    const lastInitial = lastName ? lastName.charAt(0).toUpperCase() : "";
     return (firstInitial + lastInitial) || "A"; // Fallback to "A" if no names
   };
 
@@ -100,9 +122,12 @@ const Sidebar = () => {
       <div className="flex flex-col h-full p-4">
         {/* Logo/Header */}
         <div className="mb-8">
-          <Link to="/" className="flex items-center">
+          <Link
+            to={isAdmin ? "/" : "/user-dashboard"}
+            className="flex items-center"
+          >
             <h1 className="text-xl font-bold text-primary">
-              AEMS {isAdmin ? "Admin" : "User"}
+              Event {isAdmin ? "Admin" : "User"}
             </h1>
           </Link>
         </div>
@@ -116,8 +141,8 @@ const Sidebar = () => {
                   to={item.path}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium",
-                    item.active 
-                      ? "bg-primary text-primary-foreground" 
+                    item.active
+                      ? "bg-primary text-primary-foreground"
                       : "hover:bg-accent text-foreground hover:text-foreground"
                   )}
                 >
@@ -129,7 +154,7 @@ const Sidebar = () => {
           </ul>
 
           {/* Role indicator (optional) */}
-          {!isAdmin && (
+          {!isAdmin && ( // Conditionally render "User Access" only for non-admins
             <div className="mt-4 p-2 bg-muted rounded-md">
               <p className="text-xs text-muted-foreground text-center">
                 User Access
