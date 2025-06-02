@@ -19,7 +19,7 @@ import {
   Clock,
   AlertCircle,
   Trash2,
-  Edit,
+  Mail,
   Plus,
   UserCheck,
   UserX,
@@ -29,6 +29,7 @@ import {
   useGetEvents,
   useDeleteEvent,
   useToggleEventStatus,
+  useSendBulkInvitations,
 } from "../../hooks/useEvents";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
@@ -38,6 +39,7 @@ const EventCard = ({ event, authUser, isAdmin }) => {
   const navigate = useNavigate(); // Add this line
   const { mutate: deleteEvent, isLoading: isDeleting } = useDeleteEvent();
   const { mutate: toggleStatus, isLoading: isToggling } = useToggleEventStatus();
+  const { mutate: sendBulkInvitations, isLoading: isSendingEmails } = useSendBulkInvitations();
 
   // Format dates
   const formatDate = (dateString) => {
@@ -75,6 +77,13 @@ const EventCard = ({ event, authUser, isAdmin }) => {
   // Handle toggle status
   const handleToggleStatus = () => {
     toggleStatus(event.id);
+  };
+
+  // Handle send bulk invitations
+  const handleSendBulkInvitations = () => {
+    if (window.confirm(`Send invitations to all users for "${event.name}"?`)) {
+      sendBulkInvitations(event.id || event._id);
+    }
   };
 
   // Handle navigate to event detail
@@ -210,18 +219,20 @@ const EventCard = ({ event, authUser, isAdmin }) => {
                 )}
               </Button>
 
-              {/* Edit Button */}
+              {/* Send Bulk Invitations Button */}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  toast.success("Edit functionality coming soon!");
-                  // TODO: Implement edit modal
-                }}
+                onClick={handleSendBulkInvitations}
+                disabled={isSendingEmails}
                 className="cursor-pointer flex-shrink-0"
-                title="Edit event"
+                title="Send bulk invitations"
               >
-                <Edit className="h-4 w-4" />
+                {isSendingEmails ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Mail className="h-4 w-4" />
+                )}
               </Button>
 
               {/* Delete Button */}

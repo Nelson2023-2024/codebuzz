@@ -158,6 +158,28 @@ export function useToggleEventStatus() {
   });
 }
 
+// Custom hook for sending bulk invitations
+export function useSendBulkInvitations() {
+  return useMutation({
+    mutationFn: async (eventId) => {
+      const res = await fetch(`http://localhost:5000/api/email/send-bulk-invitations/${eventId}`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send bulk invitations');
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Bulk invitations sent successfully!');
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to send bulk invitations');
+    }
+  });
+}
+
 // Custom hook for RSVP submission
 export function useSubmitRSVP() {
   const queryClient = useQueryClient();
