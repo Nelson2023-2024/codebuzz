@@ -24,17 +24,23 @@ router.post('/send-bulk-invitations/:eventId', async (req, res) => {
     }
 });
 
-// Send individual email
+// Send individual email - NOW USES EMAIL INSTEAD OF GUEST ID
 router.post('/send-email', async (req, res) => {
     try {
-        const { guestId, eventId, emailType = 'invitation' } = req.body;
+        const { email, eventId, emailType = 'invitation' } = req.body;
 
         // Basic validation for required fields
-        if (!guestId || !eventId) {
-            return res.status(400).json({ error: 'guestId and eventId are required.' });
+        if (!email || !eventId) {
+            return res.status(400).json({ error: 'email and eventId are required.' });
         }
 
-        await sendSingleEmail(guestId, eventId, emailType);
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format.' });
+        }
+
+        await sendSingleEmail(email, eventId, emailType);
         res.json({ status: 'Email queued successfully' });
     } catch (error) {
         console.error('Single email error:', error);

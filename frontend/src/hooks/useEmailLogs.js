@@ -1,8 +1,46 @@
-// hooks/useEmailLogs.js
+// Updated useEmailLogs.js hook
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
-// Hook for fetching user's email logs
+// Hook for sending single email - UPDATED to use email instead of guestId
+export function useSendSingleEmail() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ email, eventId, emailType = "invitation" }) => {
+      const response = await fetch(
+        "http://localhost:5000/api/email/send-email",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ email, eventId, emailType }), // CHANGED: email instead of guestId
+        }
+      );
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to send email");
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast.success("Email sent successfully!");
+      // Invalidate related queries
+      queryClient.invalidateQueries({ queryKey: ["emailStats"] });
+      queryClient.invalidateQueries({ queryKey: ["allEmailLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["myEmailLogs"] });
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to send email");
+    },
+  });
+}
+
+// Other hooks remain the same...
 export function useMyEmailLogs(page = 1, limit = 10, emailType, status) {
   return useQuery({
     queryKey: ["myEmailLogs", page, limit, emailType, status],
@@ -31,7 +69,6 @@ export function useMyEmailLogs(page = 1, limit = 10, emailType, status) {
   });
 }
 
-// Hook for fetching all email logs (Admin only)
 export function useAllEmailLogs(page = 1, limit = 20, emailType, status, guestId, eventId) {
   return useQuery({
     queryKey: ["allEmailLogs", page, limit, emailType, status, guestId, eventId],
@@ -62,7 +99,6 @@ export function useAllEmailLogs(page = 1, limit = 20, emailType, status, guestId
   });
 }
 
-// Hook for fetching email statistics
 export function useEmailStats(eventId = null) {
   return useQuery({
     queryKey: ["emailStats", eventId],
@@ -85,7 +121,6 @@ export function useEmailStats(eventId = null) {
   });
 }
 
-// Hook for sending bulk invitations
 export function useSendBulkInvitations() {
   const queryClient = useQueryClient();
   
@@ -108,7 +143,6 @@ export function useSendBulkInvitations() {
     },
     onSuccess: (data) => {
       toast.success("Bulk invitations sent successfully!");
-      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ["emailStats"] });
       queryClient.invalidateQueries({ queryKey: ["allEmailLogs"] });
       queryClient.invalidateQueries({ queryKey: ["myEmailLogs"] });
@@ -119,45 +153,6 @@ export function useSendBulkInvitations() {
   });
 }
 
-// Hook for sending single email
-export function useSendSingleEmail() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ guestId, eventId, emailType = "invitation" }) => {
-      const response = await fetch(
-        "http://localhost:5000/api/email/send-email",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ guestId, eventId, emailType }),
-        }
-      );
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to send email");
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data) => {
-      toast.success("Email sent successfully!");
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: ["emailStats"] });
-      queryClient.invalidateQueries({ queryKey: ["allEmailLogs"] });
-      queryClient.invalidateQueries({ queryKey: ["myEmailLogs"] });
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to send email");
-    },
-  });
-}
-
-// Hook for sending reminder emails
 export function useSendReminderEmails() {
   const queryClient = useQueryClient();
   
@@ -180,7 +175,6 @@ export function useSendReminderEmails() {
     },
     onSuccess: (data) => {
       toast.success("Reminder emails sent successfully!");
-      // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: ["emailStats"] });
       queryClient.invalidateQueries({ queryKey: ["allEmailLogs"] });
       queryClient.invalidateQueries({ queryKey: ["myEmailLogs"] });

@@ -1,4 +1,4 @@
-// pages/emails/EmailManagementPage.jsx
+// Updated EmailManagementPage.jsx
 import { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import {
@@ -11,7 +11,6 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
-// Removed: import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { Separator } from "../../components/ui/separator";
 import {
   Mail,
@@ -32,7 +31,7 @@ const EmailManagementPage = () => {
   // State for forms
   const [selectedEventId, setSelectedEventId] = useState("");
   const [singleEmailData, setSingleEmailData] = useState({
-    guestId: "",
+    email: "", // CHANGED: from guestId to email
     eventId: "",
     emailType: "invitation"
   });
@@ -48,8 +47,6 @@ const EmailManagementPage = () => {
   // Handle bulk invitation sending
   const handleSendBulkInvitations = () => {
     if (!selectedEventId) {
-      // Assuming 'toast' is available globally or imported
-      // import { toast } from "react-toastify"; // Example toast import
       toast.error("Please select an event");
       return;
     }
@@ -58,10 +55,18 @@ const EmailManagementPage = () => {
 
   // Handle single email sending
   const handleSendSingleEmail = () => {
-    if (!singleEmailData.guestId || !singleEmailData.eventId) {
+    if (!singleEmailData.email || !singleEmailData.eventId) {
       toast.error("Please fill in all required fields");
       return;
     }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(singleEmailData.email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    
     sendSingleMutation.mutate(singleEmailData);
   };
 
@@ -229,7 +234,7 @@ const EmailManagementPage = () => {
               id="statsEventFilter"
               value={selectedEventId}
               onChange={(e) => setSelectedEventId(e.target.value)}
-              className="w-[200px] p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" // Basic styling
+              className="w-[200px] p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Events</option>
               {/* You would populate this with actual events */}
@@ -249,8 +254,6 @@ const EmailManagementPage = () => {
       <div className="space-y-6">
         <h2 className="text-lg font-semibold">Email Actions</h2>
 
-          
-
         {/* Single Email */}
         <Card className="lg:col-span-2">
           <CardHeader>
@@ -259,20 +262,21 @@ const EmailManagementPage = () => {
               Send Individual Email
             </CardTitle>
             <CardDescription>
-              Send a specific email to an individual guest
+              Send a specific email to an individual guest by email address
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="singleGuestId">Guest ID</Label>
+                <Label htmlFor="singleGuestEmail">Guest Email</Label>
                 <Input
-                  id="singleGuestId"
-                  placeholder="Enter guest ID"
-                  value={singleEmailData.guestId}
+                  id="singleGuestEmail"
+                  type="email"
+                  placeholder="Enter guest email address"
+                  value={singleEmailData.email}
                   onChange={(e) => setSingleEmailData(prev => ({
                     ...prev,
-                    guestId: e.target.value
+                    email: e.target.value
                   }))}
                 />
               </div>
@@ -297,7 +301,7 @@ const EmailManagementPage = () => {
                     ...prev,
                     emailType: e.target.value
                   }))}
-                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" // Basic styling
+                  className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="invitation">Invitation</option>
                   <option value="reminder">Reminder</option>

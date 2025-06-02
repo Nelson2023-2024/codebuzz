@@ -1,18 +1,17 @@
-// queues/email.queue.js
+// Updated sendSingleEmail function in queues/email.queue.js
 import Bull from 'bull';
 import emailProcess from '../processes/email.process.js';
 import { setQueues, BullAdapter } from 'bull-board';
 
 // Correct static imports for models
-import { Guest } from '../models/Guest.model.js'; // This is the correct path you provided
-import { Event } from '../models/Event.model.js'; // Assuming Event model is also in .model.js
-import { RSVP } from '../models/RSVP.model.js'; // Assuming RSVP model is also in .model.js
-
+import { Guest } from '../models/Guest.model.js';
+import { Event } from '../models/Event.model.js';
+import { RSVP } from '../models/RSVP.model.js';
 
 const emailQueue = new Bull('email', {
     redis: {
         host: process.env.REDIS_HOST || 'tutorial_redis',
-        port: parseInt(process.env.REDIS_PORT || '6379'), // Parse port to integer
+        port: parseInt(process.env.REDIS_PORT || '6379'),
         password: process.env.REDIS_PASSWORD
     },
     defaultJobOptions: {
@@ -33,12 +32,8 @@ emailQueue.process('reminder-email', 8, emailProcess.processReminderEmail);
 
 setQueues([new BullAdapter(emailQueue)]);
 
-// Enhanced bulk email sender
+// Enhanced bulk email sender (unchanged)
 const sendBulkInvitations = async (eventId, batchSize = 100) => {
-    // REMOVED dynamic imports here - now using the static imports from the top
-    // const Guest = (await import('../models/Guest.js')).default;
-    // const Event = (await import('../models/Event.js')).default;
-
     const event = await Event.findById(eventId);
     if (!event) throw new Error('Event not found');
 
@@ -69,7 +64,7 @@ const sendBulkInvitations = async (eventId, batchSize = 100) => {
                 batchNumber: batchIndex + 1,
                 totalBatches
             }, {
-                delay: batchIndex * 500, // Stagger batches by 500ms
+                delay: batchIndex * 500,
                 priority: 10 - Math.floor(batchIndex / 100)
             });
         }
@@ -82,21 +77,37 @@ const sendBulkInvitations = async (eventId, batchSize = 100) => {
     };
 };
 
-// Send single email
-const sendSingleEmail = async (guestId, eventId, emailType = 'invitation') => {
+// UPDATED: Send single email - now accepts email instead of guestId
+const sendSingleEmail = async (email, eventId, emailType = 'invitation') => {
+    // Find the guest by email first
+    const guest = await Guest.findOne({ email: email.toLowerCase(), isActive: true });
+    
+    if (!guest) {
+        throw new Error(`Guest with email ${email} not found or inactive`);
+    }
+
+    // Verify the event exists
+    const event = await Event.findById(eventId);
+    if (!event) {
+        throw new Error('Event not found');
+    }
+
     await emailQueue.add('single-email', {
-        guestId,
+        guestId: guest._id, // Still pass guestId to the processor
+        email: guest.email, // Also pass email for reference
         eventId,
         emailType
     });
+
+    return {
+        message: 'Email queued successfully',
+        guestEmail: guest.email,
+        guestId: guest._id
+    };
 };
 
-// Send reminder emails to non-responders
+// Send reminder emails to non-responders (unchanged)
 const sendReminderEmails = async (eventId) => {
-    // REMOVED dynamic imports here - now using the static imports from the top
-    // const Guest = (await import('../models/Guest.js')).default;
-    // const RSVP = (await import('../models/RSVP.js')).default;
-
     // Find guests who haven't responded
     const respondedGuestIds = await RSVP.find({ event: eventId })
         .distinct('guest');
