@@ -16,7 +16,9 @@ import {
   Settings, 
   LogOut, 
   DoorOpen,
-  Bell
+  Bell,
+  Mail,
+  Send
 } from "lucide-react";
 
 const Sidebar = () => {
@@ -63,6 +65,18 @@ const Sidebar = () => {
       label: "RVPS", 
       path: "/rvps",
       adminOnly: true // Only admins can see RSVPs
+    },
+    { 
+      icon: Send, 
+      label: "Email Management", 
+      path: "/email-management",
+      adminOnly: true // Only admins can manage emails
+    },
+    { 
+      icon: Mail, 
+      label: "Email Logs", 
+      path: "/email-logs",
+      adminOnly: false // Both users and admins can see their email logs
     },
   ];
 

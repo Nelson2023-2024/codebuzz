@@ -15,6 +15,8 @@ import ProfilePage from "./pages/profile/ProfilePage";
 import EventDetailPage from "./pages/events/EventDetailPage";
 import RSVPsPage from "./pages/rvps/RSVPsPage";
 import GuestDashBoardPage from "./pages/home/GuestDashBoardPage";
+import EmailLogsPage from "./pages/emails/EmailLogsPage";
+import EmailManagementPage from "./pages/emails/EmailManagementPage";
 
 // Component to protect admin-only routes
 const AdminRoute = ({ children }) => {
@@ -117,6 +119,24 @@ function App() {
               </AdminRoute>
             }
           />
+          {/* Email Management Routes */}
+          <Route
+            path="/email-management"
+            element={
+              <AdminRoute>
+                <EmailManagementPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/email-logs"
+            element={
+              <ProtectedRoute>
+                <EmailLogsPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Other routes */}
           <Route
             path="/profile"
             element={
