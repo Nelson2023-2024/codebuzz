@@ -31,3 +31,37 @@ A scalable event management system designed to handle 500,000+ guests with bulk 
 
 
 
+## Key Features
+1. **Bulk Email Distribution**
+
+* Batch processing of emails to prevent rate limiting
+* Personalized invitation links with unique tokens
+* Queue-based system using Bull for reliable delivery
+* Retry mechanism for failed email deliveries
+* Real-time tracking of email status
+
+2. **Reservation System**
+
+* Secure RSVP links with JWT tokens
+* Capacity management with automatic waitlisting
+*Concurrent request handling for peak traffic
+* Duplicate prevention through database constraints
+* Real-time seat availability updates
+
+3. **Guest Management**
+
+* Comprehensive guest database with contact information
+* RSVP status tracking and history
+* Guest information updates through admin interface
+* Bulk import/export functionality
+* Email delivery logs and analytics
+
+4. **Admin Dashboard**
+
+* Real-time RSVP statistics and analytics
+* Guest data export in CSV format
+* Email campaign management and monitoring
+* Queue status monitoring through Bull Dashboard
+* Event capacity management
+
+
