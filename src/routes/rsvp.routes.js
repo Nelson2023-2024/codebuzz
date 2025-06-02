@@ -3,28 +3,24 @@ import { Guest } from '../models/Guest.model.js';
 import { Event } from '../models/Event.model.js';
 import { RSVP } from '../models/RSVP.model.js';
 import { adminRoute, protectRoute } from '../middleware/protectRoute.js';
+import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
 
-// RSVP endpoint - Refactored to remove transactions
 router.post('/', protectRoute, async (req, res) => {
     try {
         const { token, eventId, status, specialRequests, dietaryRestrictions } = req.body;
 
-        /// Validate input
+        // Validate input
         if (!token || typeof token !== 'string' || token.trim() === '') {
             return res.status(400).json({ error: 'Invitation token is required' });
         }
-
         if (!eventId || typeof eventId !== 'string' || eventId.trim() === '') {
             return res.status(400).json({ error: 'Event ID is required' });
         }
-
         if (!status || typeof status !== 'string') {
             return res.status(400).json({ error: 'RSVP status is required' });
         }
-
-
         if (!['confirmed', 'declined', 'waitlisted'].includes(status)) {
             return res.status(400).json({ error: 'Invalid RSVP status' });
         }
@@ -32,7 +28,7 @@ router.post('/', protectRoute, async (req, res) => {
         // Find guest by invitation token
         const guest = await Guest.findOne({ invitationToken: token, isActive: true });
         if (!guest) {
-            return res.status(404).json({ error: 'Invalid invitation token' });
+            return res.status(404).json({ error: 'Invalid or already used invitation token' });
         }
 
         // Find event
@@ -47,7 +43,7 @@ router.post('/', protectRoute, async (req, res) => {
         }
 
         // Check if already responded
-        let existingRsvp = await RSVP.findOne({ guest: guest._id, event: eventId });
+        const existingRsvp = await RSVP.findOne({ guest: guest._id, event: eventId });
         if (existingRsvp) {
             return res.status(400).json({
                 error: 'You have already responded to this invitation',
@@ -63,42 +59,38 @@ router.post('/', protectRoute, async (req, res) => {
         let assignedSeatNumber = null;
         let responseMessage = '';
 
-        // Handle different RSVP statuses without explicit transactions
+        // Handle different RSVP statuses
         if (status === 'confirmed') {
-            // Re-fetch event to get the most up-to-date capacity before checking
-            const currentEvent = await Event.findById(eventId); // No session needed
-
+            // Re-fetch event to check capacity
+            const currentEvent = await Event.findById(eventId);
             if (currentEvent.currentReservations >= currentEvent.maxCapacity) {
                 // Event is full, add to waitlist
                 finalStatus = 'waitlisted';
                 await Event.findByIdAndUpdate(
                     eventId,
-                    { $inc: { waitlistCount: 1 } } // Atomic increment
+                    { $inc: { waitlistCount: 1 } }
                 );
                 responseMessage = 'Event is at capacity. You have been added to the waitlist.';
             } else {
                 // Reserve a spot and assign seat number
                 const updatedEvent = await Event.findByIdAndUpdate(
                     eventId,
-                    { $inc: { currentReservations: 1 } }, // Atomic increment
-                    { new: true } // Return the updated document
+                    { $inc: { currentReservations: 1 } },
+                    { new: true }
                 );
-
                 // Assign seat number
-                assignedSeatNumber = await getNextAvailableSeat(eventId, updatedEvent); // No session needed
+                assignedSeatNumber = await getNextAvailableSeat(eventId, updatedEvent);
                 responseMessage = `Your RSVP has been confirmed! Your seat number is ${assignedSeatNumber}.`;
             }
-
         } else if (status === 'waitlisted') {
             // Direct waitlist request
             await Event.findByIdAndUpdate(eventId, {
-                $inc: { waitlistCount: 1 } // Atomic increment
+                $inc: { waitlistCount: 1 }
             });
             responseMessage = 'You have been added to the waitlist.';
-
         } else if (status === 'declined') {
             await Event.findByIdAndUpdate(eventId, {
-                $inc: { totalDeclined: 1 } // Atomic increment
+                $inc: { totalDeclined: 1 }
             });
             responseMessage = 'Your RSVP has been recorded as declined.';
         }
@@ -111,8 +103,6 @@ router.post('/', protectRoute, async (req, res) => {
             specialRequests: specialRequests || '',
             dietaryRestrictions: dietaryRestrictions || ''
         };
-
-        // Add seat number only for confirmed reservations
         if (finalStatus === 'confirmed' && assignedSeatNumber) {
             rsvpData.seatNumber = assignedSeatNumber;
         }
@@ -120,17 +110,20 @@ router.post('/', protectRoute, async (req, res) => {
         const rsvp = new RSVP(rsvpData);
         await rsvp.save();
 
-        // Update guest stats
+        // After successful RSVP, regenerate invitation token to prevent reuse
+        const newToken = uuidv4();
         await Guest.findByIdAndUpdate(guest._id, {
+            invitationToken: newToken,
             lastRsvpDate: new Date(),
             $inc: { totalRsvps: 1 }
         });
 
-        res.json({
+        return res.json({
             status: 'success',
             rsvpStatus: finalStatus,
             seatNumber: assignedSeatNumber,
             message: responseMessage,
+            newToken, // Return the newly generated token
             rsvpDetails: {
                 eventName: event.name,
                 eventDate: event.eventDate,
@@ -143,27 +136,23 @@ router.post('/', protectRoute, async (req, res) => {
     } catch (error) {
         console.error('RSVP error:', error);
 
-        // Handle specific MongoDB errors
         if (error.code === 11000) {
             return res.status(400).json({
                 error: 'Duplicate RSVP detected. You may have already responded to this invitation.'
             });
         }
-
         if (error.name === 'ValidationError') {
             return res.status(400).json({
                 error: 'Invalid data provided',
                 details: error.message
             });
         }
-
-        res.status(500).json({
+        return res.status(500).json({
             error: error.message || 'Internal server error during RSVP processing.',
-            requestId: req.id // If you have request ID middleware
+            requestId: req.id
         });
     }
 });
-
 
 // Helper to determine if registration is still open
 function isRegistrationOpenFn(event) {
