@@ -6,9 +6,9 @@ const router = Router();
 
 router.use(protectRoute)
 // Bulk email sending endpoint
-router.post('/send-bulk-invitations', async (req, res) => {
+router.post('/send-bulk-invitations/:eventId', async (req, res) => {
     try {
-        const { eventId } = req.body;
+        const { eventId } = req.params;
 
         if (!eventId) {
             return res.status(400).json({ error: 'Event ID is required' });
