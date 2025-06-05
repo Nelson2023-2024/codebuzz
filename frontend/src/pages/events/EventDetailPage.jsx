@@ -37,6 +37,8 @@ import {
   XCircle,
   Timer,
   Info,
+  Copy,
+  Check,
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { useAuth } from "../../hooks/useAuth";
@@ -238,6 +240,7 @@ const EventDetailPage = () => {
   const { authUser } = useAuth(); // Get authenticated user (though not directly used for guest RSVP)
 
   const [showRSVPModal, setShowRSVPModal] = useState(false); // State to control RSVP modal visibility
+  const [copied, setCopied] = useState(false); // State for copy button feedback
 
   // Fetch event data using a custom hook
   const { data: event, isLoading, error } = useGetEvent(eventId);
@@ -265,6 +268,21 @@ const EventDetailPage = () => {
     const diffTime = event.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
+  };
+
+  // Handle copy to clipboard functionality for Event ID
+  const handleCopyEventId = async () => {
+    if (event?._id) {
+      try {
+        await navigator.clipboard.writeText(event._id);
+        setCopied(true);
+        toast.success("Event ID copied to clipboard!");
+        setTimeout(() => setCopied(false), 2000); // Reset copied state after 2 seconds
+      } catch (err) {
+        console.error("Failed to copy event ID: ", err);
+        toast.error("Failed to copy Event ID.");
+      }
+    }
   };
 
   // Callback for when RSVP is successfully submitted
@@ -391,11 +409,25 @@ const EventDetailPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                   <span className="font-medium">Event ID:</span>
-                  <code className="bg-background px-2 py-1 rounded text-sm font-mono">
+                  <code className="bg-background px-2 py-1 rounded text-sm font-mono flex-grow">
                     {event._id}
                   </code>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCopyEventId}
+                    aria-label="Copy event ID"
+                    className="flex-shrink-0"
+                  >
+                    {copied ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
                 </div>
                 {event.registrationDeadline && (
                   <div className="flex justify-between items-center p-3 bg-muted rounded-lg">

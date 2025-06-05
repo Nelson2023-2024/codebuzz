@@ -175,9 +175,12 @@ const generateInvitationHTML = (guest, event) => {
                 <div class="instructions">
                     <h4 style="margin-top: 0; color: #0c5460;">📝 How to RSVP:</h4>
                     <ol style="margin: 10px 0; padding-left: 20px;">
-                        <li>Visit our RSVP page by clicking the button below</li>
-                        <li>Enter your invitation token: <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${guest.invitationToken}</code></li>
-                        <li>Confirm your attendance</li>
+                        <li>Log in to the Event Management System.</li>
+                        <li>Click on **"Events"** in the sidebar navigation.</li>
+                        <li>Find the specific event you've received this invitation for (<strong>"${event.name}"</strong>) and click on **"View Details"** on its card.</li>
+                        <li>On the Event Details page, scroll down until you see a **green button** with the text **"Confirm RSVP"**.</li>
+                        <li>Click that button to confirm your attendance!</li>
+                        <li>You will be prompted to enter your invitation token: <code style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px;">${guest.invitationToken}</code></li>
                     </ol>
                 </div>
                 

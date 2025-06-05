@@ -187,7 +187,7 @@ const ProfilePage = () => {
                 </div>
               </div>
             </div>
-            {/* Invitation Token Display */}
+            Invitation Token Display
             {authUser.invitationToken && (
               <div className="space-y-2"> {/* Use space-y to separate token and warning */}
                 <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
