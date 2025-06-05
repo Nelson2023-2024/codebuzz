@@ -17,11 +17,11 @@ const emailQueue = new Bull('email', {
     defaultJobOptions: {
         removeOnComplete: 100,
         removeOnFail: 50,
-        attempts: 3,
+        attempts: 3,//If a job fails, it will be retried up to 3 times.This prevents endless retries and helps debug or alert on systemic issues.
         backoff: {
             type: 'exponential',
             delay: 2000,
-        }
+        } //If a job fails, the next attempt will be delayed. With 'exponential' type and a delay of 2000ms, the delays between retries will increase exponentially (e.g., 2s, 4s, 8s). This is crucial for handling transient errors or external service rate limits.
     }
 });
 

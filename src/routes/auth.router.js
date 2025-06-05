@@ -47,10 +47,16 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// Admin logout (client-side token invalidation)
 router.post("/logout", (req, res) => {
+  res.cookie("token", "", {
+    httpOnly: true,
+    expires: new Date(0), // Immediately expire the cookie
+    sameSite: "strict",
+  });
+
   res.status(200).json({ message: "Logout successful" });
 });
+
 
 // Get current authenticated admin
 router.get("/me", protectRoute, async (req, res) => {
